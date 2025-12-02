@@ -99,6 +99,33 @@ public class Translator {
         return try APIResponseHandler.handleAPIResponse(result)
     }
     
+    // MARK: - Language Detection
+
+    public func detect(text: String, hint: String? = nil, passlist: [String]? = nil) async throws -> DetectResult {
+        try await detectAny(text: text, hint: hint, passlist: passlist)
+    }
+
+    public func detect(text: [String], hint: String? = nil, passlist: [String]? = nil) async throws -> DetectResult {
+        try await detectAny(text: text, hint: hint, passlist: passlist)
+    }
+
+    private func detectAny(text: Any, hint: String? = nil, passlist: [String]? = nil) async throws -> DetectResult {
+        var params: [String: Any] = [
+            "q": text
+        ]
+
+        if let hint = hint {
+            params["hint"] = hint
+        }
+
+        if let passlist = passlist, !passlist.isEmpty {
+            params["passlist"] = passlist
+        }
+
+        let result = try await client.post(path: "/detect", params: params)
+        return try APIResponseHandler.handleAPIResponse(result)
+    }
+
     // MARK - Supported languages
     public func getLanguages() async throws -> [String] {
         let result = try await client.get(path: "/languages")

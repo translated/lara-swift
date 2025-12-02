@@ -11,6 +11,7 @@ import Foundation
 // - Auto-detect source language
 // - Advanced translation options
 // - Get available languages
+// - Language Detection
 
 func main() async {
     // All examples can use environment variables for credentials:
@@ -104,6 +105,18 @@ func main() async {
         print("=== Available Languages ===")
         let languages = try await lara.getLanguages()
         print("Supported languages: \(languages)")
+
+        // Example 8: Detect language of a given text
+        print("=== Language Detection ===")
+        let detectResult = try await lara.detect(text: "Hola, ¿cómo estás?")
+        print("Text: Hola, ¿cómo estás?")
+        print("Detected Language: \(detectResult.language)")
+
+        // Example 9: Detect languages with hint and passlist
+        print("=== Language Detection with Hint and Passlist ===")
+        let detectResult2 = try await lara.detect(text: "Hola, ¿cómo estás?", hint: "es", passlist: ["es", "pt", "it"])
+        print("Text: Hola, ¿cómo estás?")
+        print("Detected Language: \(detectResult2.language)")
 
     } catch {
         print("❌ General error: \(error.localizedDescription)")

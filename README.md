@@ -72,6 +72,7 @@ export LARA_ACCESS_KEY_SECRET="your-access-key-secret"
   - Auto-detect source language
   - Advanced translation options
   - Get available languages
+  - Language Detection
 
 ```bash
 cd examples
