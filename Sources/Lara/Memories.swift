@@ -11,13 +11,13 @@ public class Memories {
 
     
     public func list() async throws -> [Memory] {
-        let result = try await client.get(path: "/memories")
-        return try APIResponseHandler.handleAPIResponse(result)
+        let result = try await client.get(path: "/v2/memories")
+        return try result.decoded(as: [Memory].self)
     }
 
     public func get(id: String) async throws -> Memory {
-        let result = try await client.get(path: "/memories/\(id)")
-        return try APIResponseHandler.handleAPIResponse(result)
+        let result = try await client.get(path: "/v2/memories/\(id)")
+        return try result.decoded(as: Memory.self)
     }
 
     public func create(name: String, externalId: String?) async throws -> Memory {
@@ -29,8 +29,8 @@ public class Memories {
             params["external_id"] = externalId
         }
 
-        let result = try await client.post(path: "/memories", params: params)
-        return try APIResponseHandler.handleAPIResponse(result)
+        let result = try await client.post(path: "/v2/memories", params: params)
+        return try result.decoded(as: Memory.self)
     }
 
     public func update(id: String, name: String) async throws -> Memory {
@@ -38,8 +38,8 @@ public class Memories {
             "name": name
         ]
 
-        let result = try await client.put(path: "/memories/\(id)", params: params)
-        return try APIResponseHandler.handleAPIResponse(result)
+        let result = try await client.put(path: "/v2/memories/\(id)", params: params)
+        return try result.decoded(as: Memory.self)
     }
 
     public func connect(id: String) async throws -> Memory {
@@ -47,8 +47,8 @@ public class Memories {
             "ids": [id]
         ]
 
-        let response = try await client.post(path: "/memories/connect", params: params)
-        let memories = try APIJSONDecoder.decode([Memory].self, from: response.data)
+        let response = try await client.post(path: "/v2/memories/connect", params: params)
+        let memories = try response.decoded(as: [Memory].self)
         guard let memory = memories.first else {
             throw LaraApiError(statusCode: 404, type: "NotFound", message: "No memory found")
         }
@@ -60,8 +60,8 @@ public class Memories {
             "ids": ids
         ]
 
-        let response = try await client.post(path: "/memories/connect", params: params)
-        return try APIJSONDecoder.decode([Memory].self, from: response.data)
+        let response = try await client.post(path: "/v2/memories/connect", params: params)
+        return try response.decoded(as: [Memory].self)
     }
 
     // MARK: - Translation Management
@@ -94,8 +94,8 @@ public class Memories {
             params["sentence_after"] = sentenceAfter
         }
 
-        let result = try await client.put(path: "/memories/\(id)/content", params: params, headers: headers)
-        return try APIResponseHandler.handleAPIResponse(result)
+        let result = try await client.put(path: "/v2/memories/\(id)/content", params: params, headers: headers)
+        return try result.decoded(as: MemoryImport.self)
     }
 
     public func addTranslation(
@@ -127,8 +127,8 @@ public class Memories {
             params["sentence_after"] = sentenceAfter
         }
 
-        let result = try await client.put(path: "/memories/content", params: params, headers: headers)
-        return try APIResponseHandler.handleAPIResponse(result)
+        let result = try await client.put(path: "/v2/memories/content", params: params, headers: headers)
+        return try result.decoded(as: MemoryImport.self)
     }
 
     public func deleteTranslation(
@@ -158,8 +158,8 @@ public class Memories {
             params["sentence_after"] = sentenceAfter
         }
 
-        let result = try await client.delete(path: "/memories/\(id)/content", params: params)
-        return try APIResponseHandler.handleAPIResponse(result)
+        let result = try await client.delete(path: "/v2/memories/\(id)/content", params: params)
+        return try result.decoded(as: MemoryImport.self)
     }
 
     public func deleteTranslation(
@@ -190,8 +190,8 @@ public class Memories {
             params["sentence_after"] = sentenceAfter
         }
 
-        let result = try await client.delete(path: "/memories/content", params: params)
-        return try APIResponseHandler.handleAPIResponse(result)
+        let result = try await client.delete(path: "/v2/memories/content", params: params)
+        return try result.decoded(as: MemoryImport.self)
     }
 
     public func importTmx(id: String, tmx: Data, gzip: Bool = false) async throws -> MemoryImport {
@@ -202,18 +202,18 @@ public class Memories {
 
         let files = ["tmx": tmx]
 
-        let result = try await client.post(path: "/memories/\(id)/import", params: params, files: files)
-        return try APIResponseHandler.handleAPIResponse(result)
+        let result = try await client.post(path: "/v2/memories/\(id)/import", params: params, files: files)
+        return try result.decoded(as: MemoryImport.self)
     }
 
     public func getImportStatus(id: String) async throws -> MemoryImport {
-        let result = try await client.get(path: "/memories/imports/\(id)")
-        return try APIResponseHandler.handleAPIResponse(result)
+        let result = try await client.get(path: "/v2/memories/imports/\(id)")
+        return try result.decoded(as: MemoryImport.self)
     }
 
     public func delete(id: String) async throws -> Memory {
-        let result = try await client.delete(path: "/memories/\(id)")
-        return try APIResponseHandler.handleAPIResponse(result)
+        let result = try await client.delete(path: "/v2/memories/\(id)")
+        return try result.decoded(as: Memory.self)
     }
 
     // MARK: - Import Management

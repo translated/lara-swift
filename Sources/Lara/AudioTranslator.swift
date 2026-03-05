@@ -1,13 +1,13 @@
 import Foundation
 
-/// Documents class providing methods for document translation operations
-public class Documents {
+/// AudioTranslator class providing methods for audio translation operations
+public class AudioTranslator {
 
     private let client: Client
     private let s3Client: S3Client
     private let pollingInterval: TimeInterval = 2.0 // seconds
 
-    /// Initialize Documents with a client
+    /// Initialize AudioTranslator with a client
     /// - Parameters:
     ///   - client: The Lara API client
     public init(client: Client) {
@@ -16,27 +16,26 @@ public class Documents {
     }
 
 
-    /// Upload a document for translation
+    /// Upload an audio file for translation
     /// - Parameters:
-    ///   - data: The document data to upload
-    ///   - filename: Name of the document file
+    ///   - data: The audio data to upload
+    ///   - filename: Name of the audio file
     ///   - source: Source language (optional, auto-detected if nil)
     ///   - target: Target language for translation
     ///   - options: Upload options (optional)
-    /// - Returns: document information
+    /// - Returns: audio information
     public func upload(
         data: Data,
         filename: String,
         source: String? = nil,
         target: String,
-        options: DocumentUploadOptions? = nil
-    ) async throws -> Document {
+        options: AudioUploadOptions? = nil
+    ) async throws -> Audio {
         // Step 1: Get upload URL and S3 parameters
         let uploadUrlParams: [String: Any] = ["filename": filename]
 
-        let response = try await client.get(path: "/v2/documents/upload-url", params: uploadUrlParams)
-        let api = try response.decoded(as: ApiResponse<S3UploadParams>.self)
-        let uploadParams = api.content
+        let response = try await client.get(path: "/v2/audio/upload-url", params: uploadUrlParams)
+        let uploadParams = try response.decoded(as: S3UploadParams.self)
 
         // Step 2: Upload file to S3
         try await withCheckedThrowingContinuation { continuation in
@@ -50,8 +49,8 @@ public class Documents {
             }
         }
 
-        // Step 3: Create document record
-        return try await createDocument(
+        // Step 3: Create audio record
+        return try await createAudio(
             s3Key: uploadParams.fields["key"] ?? "",
             filename: filename,
             source: source,
@@ -60,111 +59,94 @@ public class Documents {
         )
     }
 
-    /// Get the status of a document
+    /// Get the status of an audio translation
     /// - Parameters:
-    ///   - id: Document ID
-    /// - Returns: document information
-    public func status(id: String) async throws -> Document {
-        let result = try await client.get(path: "/v2/documents/\(id)")
-        return try result.decoded(as: Document.self)
+    ///   - id: Audio ID
+    /// - Returns: audio information
+    public func status(id: String) async throws -> Audio {
+        let result = try await client.get(path: "/v2/audio/\(id)")
+        return try result.decoded(as: Audio.self)
     }
 
-    /// Download a translated document
+    /// Download a translated audio file
     /// - Parameters:
-    ///   - id: Document ID
-    ///   - options: Download options (optional)
-    /// - Returns: downloaded document data
-    public func download(
-        id: String,
-        options: DocumentDownloadOptions? = nil
-    ) async throws -> Data {
+    ///   - id: Audio ID
+    /// - Returns: downloaded audio data
+    public func download(id: String) async throws -> Data {
         // Get download URL
-        let params = options?.toParams() ?? [:]
-
-        let response = try await client.get(path: "/v2/documents/\(id)/download-url", params: params)
-        let api = try response.decoded(as: ApiResponse<DownloadUrlResponse>.self)
+        let response = try await client.get(path: "/v2/audio/\(id)/download-url")
+        let downloadResponse = try response.decoded(as: AudioDownloadUrlResponse.self)
 
         // Download from S3
         return try await withCheckedThrowingContinuation { continuation in
-            self.s3Client.download(url: api.content.url) { result in
+            self.s3Client.download(url: downloadResponse.url) { result in
                 continuation.resume(with: result)
             }
         }
     }
 
-    /// Polls the document status until it reaches TRANSLATED or ERROR
+    /// Polls the audio status until it reaches TRANSLATED or ERROR
     /// - Parameters:
-    ///   - id: Document ID
+    ///   - id: Audio ID
     ///   - maxWaitTime: Maximum time to wait (defaults to 15 minutes)
-    /// - Returns: final Document
+    /// - Returns: final Audio
     private func waitForCompletion(
         id: String,
         maxWaitTime: TimeInterval = 900
-    ) async throws -> Document {
+    ) async throws -> Audio {
         return try await Poller.poll(
             initial: try await status(id: id),
             interval: pollingInterval,
             maxTime: maxWaitTime,
             next: { [weak self] _ in
                 guard let self = self else {
-                    throw LaraApiConnectionError("Documents client deallocated during polling")
+                    throw LaraApiConnectionError("AudioTranslator client deallocated during polling")
                 }
-                let document = try await self.status(id: id)
+                let audio = try await self.status(id: id)
 
-                if document.status == .error {
-                    let errorMessage = document.errorReason ?? "Document translation failed"
+                if audio.status == .error {
+                    let errorMessage = audio.errorReason ?? "Audio translation failed"
                     throw LaraApiError(
                         statusCode: 500,
-                        type: "DocumentTranslationError",
+                        type: "AudioTranslationError",
                         message: errorMessage
                     )
                 }
 
-                return document
+                return audio
             },
             isFinished: { $0.status == .translated }
         )
     }
 
-    /// Upload and translate a document in one operation
+    /// Upload and translate an audio file in one operation
     /// Internally composes: upload -> waitForCompletion -> download
     public func translate(
         data: Data,
         filename: String,
         source: String? = nil,
         target: String,
-        options: DocumentTranslateOptions? = nil
+        options: AudioUploadOptions? = nil
     ) async throws -> Data {
-
-        let uploadOptions = DocumentUploadOptions(
-            adaptTo: options?.adaptTo,
-            glossaries: options?.glossaries,
-            noTrace: options?.noTrace,
-            style: options?.style,
-            password: options?.password,
-            extractionParams: options?.extractionParams
-        )
-
-        // Upload the document
-        let document = try await upload(data: data, filename: filename, source: source, target: target, options: uploadOptions)
+        // Upload the audio
+        let audio = try await upload(data: data, filename: filename, source: source, target: target, options: options)
 
         // Wait for completion
-        _ = try await waitForCompletion(id: document.id)
+        _ = try await waitForCompletion(id: audio.id)
 
         // Then download
-        let downloadOptions = options?.outputFormat != nil ? DocumentDownloadOptions(outputFormat: options?.outputFormat) : nil
-        return try await download(id: document.id, options: downloadOptions)
+        return try await download(id: audio.id)
     }
 
     // MARK: - Private Helper Methods
 
-    private func createDocument(
+    private func createAudio(
         s3Key: String,
         filename: String,
         source: String?,
         target: String,
-        options: DocumentUploadOptions?
-    ) async throws -> Document {
+        options: AudioUploadOptions?
+    ) async throws -> Audio {
         var params: [String: Any] = [
             "target": target,
             "s3key": s3Key
@@ -183,7 +165,7 @@ public class Documents {
             headers["X-No-Trace"] = "true"
         }
 
-        let result = try await client.post(path: "/v2/documents", params: params, headers: headers)
-        return try result.decoded(as: Document.self)
+        let result = try await client.post(path: "/v2/audio/translate", params: params, headers: headers)
+        return try result.decoded(as: Audio.self)
     }
 }

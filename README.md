@@ -10,6 +10,8 @@ All major translation features are accessible, making it easy to integrate and c
 ## 🌍 **Features:**
 - **Text Translation**: Single strings, multiple strings, and complex text blocks
 - **Document Translation**: Word, PDF, and other document formats with status monitoring
+- **Image Translation**: Translate images or text within images
+- **Audio Translation**: MP3, WAV, and other audio formats with status monitoring
 - **Translation Memory**: Store and reuse translations for consistency
 - **Glossaries**: Enforce terminology standards across translations
 - **Language Detection**: Automatic source language identification
@@ -90,6 +92,28 @@ cd examples
 swift run document_translation.swift
 ```
 
+### Image Translation
+- **[image_translation.swift](examples/image_translation.swift)** - Complete image translation examples
+  - Basic image translation with text overlay
+  - Advanced options with memories, glossaries, and inpainting
+  - Extract and translate text from images
+
+```bash
+cd examples
+swift run image_translation.swift
+```
+
+### Audio Translation
+- **[audio_translation.swift](examples/audio_translation.swift)** - Audio translation examples
+  - Basic audio translation
+  - Advanced options with memories and glossaries
+  - Step-by-step translation with status monitoring
+
+```bash
+cd examples
+swift run audio_translation.swift
+```
+
 ### Translation Memory Management
 - **[memories_management.swift](examples/memories_management.swift)** - Memory management examples
   - Create, list, update, delete memories
@@ -107,6 +131,7 @@ swift run memories_management.swift
 ### Glossary Management
 - **[glossaries_management.swift](examples/glossaries_management.swift)** - Glossary management examples
   - Create, list, update, delete glossaries
+  - Individual term management (add/remove terms)
   - CSV import with status monitoring
   - Glossary export
   - Glossary terms count
@@ -215,6 +240,7 @@ let translatedDataWithOptions = try await lara.documents.translate(
     options: options
 )
 ```
+
 ### Document translation with status monitoring
 #### Document upload
 ```swift
@@ -241,6 +267,97 @@ let status = try await lara.documents.status(id: documentId)
 #### Download translated document
 ```swift
 let downloadedData = try await lara.documents.download(id: documentId)
+```
+
+### 🖼️ Image Translation
+```swift
+import Foundation
+
+// Load image data
+let imageURL = URL(fileURLWithPath: "/path/to/your/image.jpg")
+let imageData = try Data(contentsOf: imageURL)
+
+// Create MultipartFile
+let file = MultipartFile(filename: "image.jpg", data: imageData)
+
+// Basic image translation
+let translatedImageData = try await lara.images.translate(
+    file: file,
+    source: "en",
+    target: "fr",
+    options: ImageTranslationOptions(textRemoval: .overlay)
+)
+
+// Extract and translate text from image
+let textResults = try await lara.images.translateText(
+    file: file,
+    source: "en",
+    target: "fr",
+    options: ImageTextTranslationOptions(
+        adaptTo: ["mem_1A2b3C4d5E6f7G8h9I0jKl"], // Memory IDs
+        glossaries: ["gls_1A2b3C4d5E6f7G8h9I0jKl"] // Glossary IDs
+    )
+)
+```
+
+### 🔊 Audio Translation
+#### Simple audio translation
+```swift
+import Foundation
+
+// Replace with your actual file path
+let fileURL = URL(fileURLWithPath: "/path/to/your/audio.mp3")
+let fileData = try Data(contentsOf: fileURL)
+
+let translatedData = try await lara.audio.translate(
+    data: fileData,
+    filename: "audio.mp3",
+    source: "en",
+    target: "fr"
+)
+
+// With options
+let options = AudioUploadOptions(
+    adaptTo: ["mem_1A2b3C4d5E6f7G8h9I0jKl"],  // Replace with actual memory IDs
+    glossaries: ["gls_1A2b3C4d5E6f7G8h9I0jKl"],  // Replace with actual glossary IDs
+    style: .fluid
+)
+
+let translatedDataWithOptions = try await lara.audio.translate(
+    data: fileData,
+    filename: "audio.mp3",
+    source: "en",
+    target: "fr",
+    options: options
+)
+```
+
+### 🔊 Audio Translation with Status Monitoring
+#### Audio upload
+```swift
+//Optional: upload options
+let uploadOptions = AudioUploadOptions(
+    adaptTo: ["mem_1A2b3C4d5E6f7G8h9I0jKl"],  // Replace with actual memory IDs
+    glossaries: ["gls_1A2b3C4d5E6f7G8h9I0jKl"],  // Replace with actual glossary IDs
+    noTrace: true,
+    style: .fluid
+)
+
+let audio = try await lara.audio.upload(
+    data: fileData,
+    filename: "audio.mp3",
+    source: "en",
+    target: "fr",
+    options: uploadOptions
+)
+```
+#### Audio translation status monitoring
+```swift
+let status = try await lara.audio.status(id: audioId)
+```
+#### Download translated audio
+```swift
+let downloadedData = try await lara.audio.download(id: audioId)
 ```
 
 ### 🧠 Memory Management
@@ -317,6 +434,17 @@ let csvFileURL = URL(fileURLWithPath: "/path/to/your/glossary.csv")
 let csvData = try Data(contentsOf: csvFileURL)
 let glossaryImport = try await lara.glossaries.importCsv(id: "gls_1A2b3C4d5E6f7G8h9I0jKl", csv: csvData)
 
+// Add (or replace) individual terms to glossary
+let terms = [
+    ["language": "fr-FR", "value": "Bonjour"],
+    ["language": "es-ES", "value": "Hola"]
+]
+_ = try await lara.glossaries.addOrReplaceEntry(glossaryId: "gls_1A2b3C4d5E6f7G8h9I0jKl", terms: terms, guid: nil)
+
+// Remove a specific term from glossary
+let termToRemove = ["language": "fr-FR", "value": "Bonjour"]
+_ = try await lara.glossaries.deleteEntry(glossaryId: "gls_1A2b3C4d5E6f7G8h9I0jKl", term: termToRemove, guid: nil)
+
 // Check import status
 let importStatus = try await lara.glossaries.getImportStatus(id: "gls_1A2b3C4d5E6f7G8h9I0jKl")
 
@@ -390,7 +518,7 @@ do {
 ## 📋 Requirements
 
 - Swift 5.5 or higher
-- iOS 13.0+, macOS 10.15+, or other supported platforms
+- iOS 15.0+, macOS 10.15+, or other supported platforms
 - Valid Lara API credentials
 
 ## 🧪 Testing

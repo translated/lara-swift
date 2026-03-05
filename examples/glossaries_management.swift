@@ -5,6 +5,7 @@ import Foundation
 //
 // This example demonstrates:
 // - Create, list, update, delete glossaries
+// - Individual term management (add/remove terms)
 // - CSV import with status monitoring
 // - Glossary export
 // - Glossary terms count
@@ -58,7 +59,25 @@ func main() async {
         print("📝 Updated name: '\(glossaryId)' -> '\(updatedGlossary.name)'")
         print()
 
-        // Example 3: CSV import functionality
+        // Example 3: Term management
+        print("=== Term Management ===")
+
+        // Add (or replace) individual terms to glossary
+        let terms = [
+            ["language": "fr-FR", "value": "Bonjour"],
+            ["language": "es-ES", "value": "Hola"]
+        ]
+        _ = try await lara.glossaries.addOrReplaceEntry(glossaryId: glossaryId, terms: terms, guid: nil)
+        print("✅ Terms added successfully to glossary")
+        print()
+
+        // Remove a specific term from glossary
+        let termToRemove = ["language": "fr-FR", "value": "Bonjour"]
+        _ = try await lara.glossaries.deleteEntry(glossaryId: glossaryId, term: termToRemove, guid: nil)
+        print("✅ Term removed successfully from glossary")
+        print()
+
+        // Example 4: CSV import functionality
         print("=== CSV Import Functionality ===")
 
         // Replace with your actual CSV file path
@@ -86,7 +105,7 @@ func main() async {
         }
         print()
 
-        // Example 4: Export functionality
+        // Example 5: Export functionality
         print("=== Export Functionality ===")
 
         // Export as CSV table unidirectional format
@@ -100,7 +119,7 @@ func main() async {
         print("💾 Sample export saved to: \(FileManager.default.displayName(atPath: exportFilePath))")
         print()
 
-        // Example 5: Glossary Terms Count
+        // Example 6: Glossary Terms Count
         print("=== Glossary Terms Count ===")
         let finalCounts = try await lara.glossaries.counts(id: glossaryId)
         print("📊 Detailed glossary terms count:")

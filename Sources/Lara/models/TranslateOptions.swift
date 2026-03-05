@@ -32,6 +32,7 @@ public struct TranslateOptions {
     public var verbose: Bool?
     public var headers: [String: String]?
     public var style: TranslationStyle?
+    public var reasoning: Bool?
 
     public init(sourceHint: String? = nil,
                 adaptTo: [String]? = nil,
@@ -46,7 +47,8 @@ public struct TranslateOptions {
                 noTrace: Bool? = nil,
                 verbose: Bool? = nil,
                 headers: [String: String]? = nil,
-                style: TranslationStyle? = nil) {
+                style: TranslationStyle? = nil,
+                reasoning: Bool? = nil) {
         self.sourceHint = sourceHint
         self.adaptTo = adaptTo
         self.glossaries = glossaries
@@ -61,6 +63,7 @@ public struct TranslateOptions {
         self.verbose = verbose
         self.headers = headers
         self.style = style
+        self.reasoning = reasoning
     }
 
     public func toParams() -> [String: Any] {
@@ -101,6 +104,9 @@ public struct TranslateOptions {
         }
         if let style = self.style {
             params["style"] = style.rawValue
+        }
+        if let reasoning = self.reasoning {
+            params["reasoning"] = reasoning
         }
 
         return params

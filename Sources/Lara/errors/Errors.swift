@@ -17,6 +17,11 @@ public struct S3Error: LaraError {
     public init(_ message: String) { self.description = message }
 }
 
+public struct LaraValidationError: LaraError {
+    public let description: String
+    public init(_ message: String) { self.description = message }
+}
+
 public struct LaraApiError: LaraError {
     public let statusCode: Int
     public let type: String

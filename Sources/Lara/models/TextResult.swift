@@ -19,7 +19,6 @@ public class TextResult: Codable {
         self.glossariesMatches = glossariesMatches
     }
     
-    // Decodifica custom
     public required convenience init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let contentType = try container.decode(String.self, forKey: .contentType)
@@ -33,7 +32,6 @@ public class TextResult: Codable {
         self.init(contentType: contentType, sourceLanguage: sourceLanguage, translation: translation, adaptedTo: adaptedTo, glossaries: glossaries, adaptedToMatches: adaptedToMatches, glossariesMatches: glossariesMatches)
     }
 
-    // Encode (facoltativo se vuoi anche codificare)
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(contentType, forKey: .contentType)

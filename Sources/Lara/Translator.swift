@@ -2,25 +2,42 @@ import Foundation
 
 public class Translator {
 
-    private let client: Client
+    private let laraClient: Client
     public let memories: Memories
     public let glossaries: Glossaries
     public let documents: Documents
+    public let images: ImageTranslator
+    public let audio: AudioTranslator
 
     // MARK: - Init
 
     /// Init translator
-    public init(credentials: Credentials, clientOptions: ClientOptions = ClientOptions()) {
-        self.client = Client(credentials: credentials, options: clientOptions)
+    public init(accessKey: AccessKey, clientOptions: ClientOptions = ClientOptions()) {
+        self.laraClient = Client(accessKey: accessKey, options: clientOptions)
+        self.memories = Memories(client: laraClient)
+        self.glossaries = Glossaries(client: laraClient)
+        self.documents = Documents(client: laraClient)
+        self.images = ImageTranslator(client: laraClient)
+        self.audio = AudioTranslator(client: laraClient)
+    }
 
-        self.memories = Memories(client: client)
-        self.glossaries = Glossaries(client: client)
-        self.documents = Documents(client: client)
+    public init(authToken: AuthToken, clientOptions: ClientOptions = ClientOptions()) {
+        self.laraClient = Client(authToken: authToken, options: clientOptions)
+        self.memories = Memories(client: laraClient)
+        self.glossaries = Glossaries(client: laraClient)
+        self.documents = Documents(client: laraClient)
+        self.images = ImageTranslator(client: laraClient)
+        self.audio = AudioTranslator(client: laraClient)
+    }
+
+    @available(*, deprecated, message: "Use init(accessKey:) with AccessKey instead")
+    public convenience init(credentials: Credentials, clientOptions: ClientOptions = ClientOptions()) {
+        self.init(accessKey: credentials, clientOptions: clientOptions)
     }
 
     /// Set an extra header for all requests
     public func setExtraHeader(name: String, value: String) {
-        client.setExtraHeader(name: name, value: value)
+        laraClient.setExtraHeader(name: name, value: value)
     }
 
     // MARK: - Text translation
@@ -31,9 +48,10 @@ public class Translator {
     ///   - source: source language (optional)
     ///   - target: target language
     ///   - options: translation options
+    ///   - callback: callback for streaming partial results (requires reasoning=true)
     /// - Returns: translation result
-    public func translate(text: String, source: String? = nil, target: String, options: TranslateOptions?) async throws -> TextResult {
-        try await translateAny(text: text, source: source, target: target, options: options)
+    public func translate(text: String, source: String? = nil, target: String, options: TranslateOptions?, callback: ((Any) -> Void)? = nil) async throws -> TextResult {
+        try await translateAny(text: text, source: source, target: target, options: options, callback: callback)
     }
 
     /// Translate an array of sentences
@@ -42,9 +60,10 @@ public class Translator {
     ///   - source: source language (optional)
     ///   - target: target language
     ///   - options: translation options
+    ///   - callback: callback for streaming partial results (requires reasoning=true)
     /// - Returns: translation result
-    public func translate(text: [String], source: String? = nil, target: String, options: TranslateOptions?) async throws -> TextResult {
-        try await translateAny(text: text, source: source, target: target, options: options)
+    public func translate(text: [String], source: String? = nil, target: String, options: TranslateOptions?, callback: ((Any) -> Void)? = nil) async throws -> TextResult {
+        try await translateAny(text: text, source: source, target: target, options: options, callback: callback)
     }
 
     /// Translate an array of text blocks
@@ -53,9 +72,10 @@ public class Translator {
     ///   - source: source language (optional)
     ///   - target: target language
     ///   - options: translation options
+    ///   - callback: callback for streaming partial results (requires reasoning=true)
     /// - Returns: translation result
-    public func translate(text: [TextBlock], source: String? = nil, target: String, options: TranslateOptions?) async throws -> TextResult {
-        try await translateAny(text: text, source: source, target: target, options: options)
+    public func translate(text: [TextBlock], source: String? = nil, target: String, options: TranslateOptions?, callback: ((Any) -> Void)? = nil) async throws -> TextResult {
+        try await translateAny(text: text, source: source, target: target, options: options, callback: callback)
     }
     
     /// Translate
@@ -64,41 +84,49 @@ public class Translator {
     ///   - source: source language (optional)
     ///   - target: target language
     ///   - options: translation options
+    ///   - callback: callback for streaming partial results
     /// - Returns: translation result
-    private func translateAny(text: Any, source: String? = nil, target: String, options: TranslateOptions?) async throws -> TextResult {
+    private func translateAny(text: Any, source: String? = nil, target: String, options: TranslateOptions?, callback: ((Any) -> Void)? = nil) async throws -> TextResult {
 
-        var params: [String: Any]
+        var q: Any = text
 
         if let textBlocks = text as? [TextBlock] {
-            let textBlocksJSON = textBlocks.map { $0.apiRepresentation }
-
-            params = [
-                "target": target,
-                "q": textBlocksJSON
-            ]
-        } else {
-            params = [
-                "target": target,
-                "q": text
-            ]
+            q = textBlocks.map { block in
+                ["text": block.text, "translatable": block.translatable]
+            }
         }
+
+        var params: [String: Any] = [
+            "target": target,
+            "q": q
+        ]
 
         if let sourceLang = source {
             params["source"] = sourceLang
         }
-
-        let optionsParameters = options?.toParams() ?? [:]
-        params.merge(optionsParameters) {(_, new) in new}
 
         var headers = options?.headers ?? [:]
         if let noTrace = options?.noTrace, noTrace == true {
             headers["X-No-Trace"] = "true"
         }
 
-        let result = try await client.post(path: "/translate", params: params, headers: headers)
-        return try APIResponseHandler.handleAPIResponse(result)
+        if let options = options {
+            let optionParams = options.toParams()
+            for (key, value) in optionParams {
+                params[key] = value
+            }
+        }
+
+        let response = try await laraClient.postStream(path: "/translate", params: params, headers: headers, callback: callback)
+        return try response.decoded(as: TextResult.self)
     }
-    
+
+    // MARK - Supported languages
+    public func getLanguages() async throws -> [String] {
+        let response = try await laraClient.get(path: "/v2/languages")
+        return try response.decoded(as: [String].self)
+    }
+
     // MARK: - Language Detection
 
     public func detect(text: String, hint: String? = nil, passlist: [String]? = nil) async throws -> DetectResult {
@@ -122,13 +150,7 @@ public class Translator {
             params["passlist"] = passlist
         }
 
-        let result = try await client.post(path: "/detect", params: params)
-        return try APIResponseHandler.handleAPIResponse(result)
-    }
-
-    // MARK - Supported languages
-    public func getLanguages() async throws -> [String] {
-        let result = try await client.get(path: "/languages")
-        return try APIResponseHandler.handleAPIResponse(result)
+        let response = try await laraClient.post(path: "/v2/detect", params: params)
+        return try response.decoded(as: DetectResult.self)
     }
 }

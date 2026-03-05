@@ -28,7 +28,8 @@ public class JsonRequestBody: RequestBody {
     }
 
     public func md5() -> String? {
-        return bodyData.md5()
+        let digest = Insecure.MD5.hash(data: bodyData)
+        return Data(digest).base64EncodedString()
     }
 
     public func write(to stream: OutputStream) throws {
@@ -50,8 +51,17 @@ public class MultipartRequestBody: RequestBody {
 
     public init(params: [String: Any]?, files: [String: MultipartFile]?) {
         self.boundary = "---------------------------LaraClient_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
-        self.params = params?.compactMapValues { $0 as? String }
+        self.params = params?.compactMapValues { MultipartRequestBody.serializeValue($0) }
         self.files = files
+    }
+
+    private static func serializeValue(_ value: Any) -> String? {
+        if JSONSerialization.isValidJSONObject(value) {
+            if let data = try? JSONSerialization.data(withJSONObject: value, options: []) {
+                return String(data: data, encoding: .utf8)
+            }
+        }
+        return String(describing: value)
     }
 
     public func contentType() -> String {

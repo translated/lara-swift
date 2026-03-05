@@ -1,11 +1,11 @@
 import Foundation
 
-public class Credentials {
-    public let accessKeyId: String
-    public let accessKeySecret: String
-    
+@available(*, deprecated, message: "Use AccessKey(id:secret:) instead")
+public class Credentials: AccessKey {
     public init(accessKeyId: String, accessKeySecret: String) {
-        self.accessKeyId = accessKeyId
-        self.accessKeySecret = accessKeySecret
+        super.init(id: accessKeyId, secret: accessKeySecret)
     }
+
+    public var accessKeyId: String { return id }
+    public var accessKeySecret: String { return secret }
 }

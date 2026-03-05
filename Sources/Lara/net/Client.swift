@@ -1,26 +1,44 @@
 import Foundation
 import CommonCrypto
+import CryptoKit
 
 public class Client {
 
     private let baseUrl: URL
-    private let accessKeyId: String
-    private let accessKeySecret: String
-    private var extraHeaders: [String: String] = [:]
+    private let accessKeyId: String?
+    private let accessKeySecret: String?
 
-    public var connectionTimeout: TimeInterval
-    public var readTimeout: TimeInterval
+    private var token: String?
+    private var refreshToken: String?
+
+    public let connectionTimeout: TimeInterval
+    public let readTimeout: TimeInterval
+    internal var extraHeaders: [String: String] = [:]
 
     private let jsonDecoder: JSONDecoder = APIJSONDecoder.decoder()
 
     // MARK: - Init
-    public init(credentials: Credentials, options: ClientOptions = ClientOptions()) {
-        self.accessKeyId = credentials.accessKeyId
-        self.accessKeySecret = credentials.accessKeySecret
-
+    public init(accessKey: AccessKey, options: ClientOptions = ClientOptions()) {
+        self.accessKeyId = accessKey.id
+        self.accessKeySecret = accessKey.secret
         self.baseUrl = options.serverUrl
         self.connectionTimeout = options.connectionTimeout
         self.readTimeout = options.readTimeout
+    }
+
+    public init(authToken: AuthToken, options: ClientOptions = ClientOptions()) {
+        self.accessKeyId = nil
+        self.accessKeySecret = nil
+        self.baseUrl = options.serverUrl
+        self.connectionTimeout = options.connectionTimeout
+        self.readTimeout = options.readTimeout
+        self.token = authToken.token
+        self.refreshToken = authToken.refreshToken
+    }
+
+    @available(*, deprecated, message: "Use init(accessKey:) with AccessKey instead")
+    public convenience init(credentials: Credentials, options: ClientOptions = ClientOptions()) {
+        self.init(accessKey: credentials, options: options)
     }
 
     // MARK: - Extra headers
@@ -30,16 +48,22 @@ public class Client {
 
     // MARK: - HTTP Methods
     public func get(path: String, params: [String: Any]? = nil, headers: [String: String]? = nil) async throws -> ClientResponse {
-        try await request(method: "GET", path: path, params: params, files: nil, headers: headers)
+        return try await request(method: "GET", path: path, params: params, files: nil, headers: headers)
     }
 
-    public func post(path: String, params: [String: Any]? = nil, files: [String: Data]? = nil, headers: [String: String]? = nil) async throws -> ClientResponse {
-        let multipartFiles = files?.mapValues { data in MultipartFile(filename: UUID().uuidString, data: data) }
+    public func post(path: String, params: [String: Any]? = nil, files: [String: Data]? = nil, filenames: [String: String]? = nil, headers: [String: String]? = nil) async throws -> ClientResponse {
+        let multipartFiles: [String: MultipartFile]?
+
+        if let files = files {
+            multipartFiles = Dictionary(uniqueKeysWithValues: files.map { key, data in
+                let filename = filenames?[key] ?? UUID().uuidString
+                return (key, MultipartFile(filename: filename, data: data))
+            })
+        } else {
+            multipartFiles = nil
+        }
+
         return try await request(method: "POST", path: path, params: params, files: multipartFiles, headers: headers)
-    }
-
-    public func delete(path: String, params: [String: Any]? = nil, headers: [String: String]? = nil) async throws -> ClientResponse {
-        try await request(method: "DELETE", path: path, params: params, files: nil, headers: headers)
     }
 
     public func put(path: String, params: [String: Any]? = nil, files: [String: Data]? = nil, headers: [String: String]? = nil) async throws -> ClientResponse {
@@ -47,64 +71,270 @@ public class Client {
         return try await request(method: "PUT", path: path, params: params, files: multipartFiles, headers: headers)
     }
 
+    public func delete(path: String, params: [String: Any]? = nil, headers: [String: String]? = nil) async throws -> ClientResponse {
+        try await request(method: "DELETE", path: path, params: params, files: nil, headers: headers)
+    }
+
+    public func postStream(path: String, params: [String: Any]? = nil, files: [String: Data]? = nil, headers: [String: String]? = nil, callback: ((Any) -> Void)? = nil) async throws -> ClientResponse {
+        let multipartFiles = files?.mapValues { data in MultipartFile(filename: UUID().uuidString, data: data) }
+        return try await streamRequest(path: path, params: params, files: multipartFiles, headers: headers, callback: callback, isRetry: false)
+    }
 
     // MARK: - Core request
     private func request(method: String, path: String, params: [String: Any]?, files: [String: MultipartFile]?, headers: [String: String]?) async throws -> ClientResponse {
-        let normalizedPath = normalize(path: path)
-        let fullUrl = baseUrl.appendingPathComponent(normalizedPath)
+        let token = try await ensureValidToken()
 
-        let requestBody: RequestBody? = try createRequestBody(params: params, files: files)
+        let prunedParams = prune(params)
 
-        // Create URLRequest
-        var urlRequest = URLRequest(url: fullUrl, timeoutInterval: connectionTimeout)
-        urlRequest.httpMethod = "POST"
+        let normalizedPath = path.hasPrefix("/") ? path : "/" + path
+        let finalUrl = baseUrl.appendingPathComponent(normalizedPath)
+
+        var requestUrl = finalUrl
+        let requestBody: RequestBody?
+
+        if method == "GET" {
+            if !prunedParams.isEmpty {
+                var components = URLComponents(url: finalUrl, resolvingAgainstBaseURL: false)!
+                var queryItems = components.queryItems ?? []
+                for (key, value) in prunedParams {
+                    queryItems.append(URLQueryItem(name: key, value: String(describing: value)))
+                }
+                components.queryItems = queryItems
+                requestUrl = components.url!
+                requestBody = nil
+            } else {
+                requestBody = nil
+            }
+        } else {
+            if let files = files, !files.isEmpty {
+                requestBody = MultipartRequestBody(params: prunedParams, files: files)
+            } else if !prunedParams.isEmpty {
+                requestBody = try JsonRequestBody(params: prunedParams)
+            } else {
+                requestBody = try JsonRequestBody(params: [:])
+            }
+        }
+
+        var urlRequest = URLRequest(url: requestUrl, timeoutInterval: connectionTimeout)
+        urlRequest.httpMethod = method
         urlRequest.cachePolicy = .reloadIgnoringLocalCacheData
 
-        urlRequest.setValue(method, forHTTPHeaderField: "X-HTTP-Method-Override")
+        let dateString = httpDate()
+        urlRequest.setValue(dateString, forHTTPHeaderField: "Date")
+        urlRequest.setValue("lara-swift", forHTTPHeaderField: "X-Lara-SDK-Name")
 
-        var contentTypeForSigning = ""
+        urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        extraHeaders.forEach { key, value in urlRequest.setValue(value, forHTTPHeaderField: key) }
+        headers?.forEach { key, value in urlRequest.setValue(value, forHTTPHeaderField: key) }
+
         if let body = requestBody {
             urlRequest.setValue(body.contentType(), forHTTPHeaderField: "Content-Type")
             urlRequest.setValue("\(body.contentLength())", forHTTPHeaderField: "Content-Length")
 
-            if let md5 = body.md5() {
-                urlRequest.setValue(md5, forHTTPHeaderField: "Content-MD5")
-            }
-
             let bodyData = try createBodyData(from: body)
             urlRequest.httpBody = bodyData
-            contentTypeForSigning = body.contentType().components(separatedBy: ";").first?.trimmingCharacters(in: .whitespaces) ?? ""
         }
 
-        // Standard headers
+        let response = try await executeRequest(urlRequest)
+
+        if response.httpResponse.statusCode == 401 {
+            self.token = nil
+            return try await request(method: method, path: path, params: params, files: files, headers: headers)
+        }
+
+        if !(200..<300).contains(response.httpResponse.statusCode) {
+            let error: [String: Any] = (try? JSONSerialization.jsonObject(with: response.data, options: []) as? [String: Any])?["error"] as? [String: Any] ?? [:]
+            throw LaraApiError(
+                statusCode: response.httpResponse.statusCode,
+                type: error["type"] as? String ?? "UnknownError",
+                message: error["message"] as? String ?? "An unknown error occurred"
+            )
+        }
+
+        return response
+    }
+
+    private func streamRequest(path: String, params: [String: Any]?, files: [String: MultipartFile]?, headers: [String: String]?, callback: ((Any) -> Void)?, isRetry: Bool = false) async throws -> ClientResponse {
+        let token = try await ensureValidToken()
+
+        let prunedParams = prune(params)
+
+        let normalizedPath = path.hasPrefix("/") ? path : "/" + path
+        let finalUrl = baseUrl.appendingPathComponent(normalizedPath)
+
+        let requestUrl = finalUrl
+        let requestBody: RequestBody?
+
+        if let files = files, !files.isEmpty {
+            requestBody = MultipartRequestBody(params: prunedParams, files: files)
+        } else if !prunedParams.isEmpty {
+            requestBody = try JsonRequestBody(params: prunedParams)
+        } else {
+            requestBody = try JsonRequestBody(params: [:])
+        }
+
+        var urlRequest = URLRequest(url: requestUrl, timeoutInterval: connectionTimeout)
+        urlRequest.httpMethod = "POST"
+        urlRequest.cachePolicy = .reloadIgnoringLocalCacheData
+
         let dateString = httpDate()
         urlRequest.setValue(dateString, forHTTPHeaderField: "Date")
         urlRequest.setValue("lara-swift", forHTTPHeaderField: "X-Lara-SDK-Name")
-        if let version = Version.get() {
-            urlRequest.setValue(version, forHTTPHeaderField: "X-Lara-SDK-Version")
-        }
 
-        // Extra headers
+        urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
         extraHeaders.forEach { key, value in urlRequest.setValue(value, forHTTPHeaderField: key) }
         headers?.forEach { key, value in urlRequest.setValue(value, forHTTPHeaderField: key) }
 
-        // Authorization
-        let signature = sign(method: method, path: normalizedPath, date: dateString, contentType: contentTypeForSigning, md5: urlRequest.value(forHTTPHeaderField: "Content-MD5"))
-        urlRequest.setValue("Lara \(accessKeyId):\(signature)", forHTTPHeaderField: "Authorization")
+        if let body = requestBody {
+            urlRequest.setValue(body.contentType(), forHTTPHeaderField: "Content-Type")
+            urlRequest.setValue("\(body.contentLength())", forHTTPHeaderField: "Content-Length")
 
-        return try await executeRequest(urlRequest)
+            let bodyData = try createBodyData(from: body)
+            urlRequest.httpBody = bodyData
+        }
+
+        let (response, shouldRetryAuth) = try await executeStreamRequest(urlRequest, callback: callback)
+
+        if shouldRetryAuth && !isRetry {
+            self.token = nil
+            return try await streamRequest(path: path, params: params, files: files, headers: headers, callback: callback, isRetry: true)
+        }
+
+        return response
     }
 
-    // MARK: - Helper Methods
-    private func createRequestBody(params: [String: Any]?, files: [String: MultipartFile]?) throws -> RequestBody? {
-        if let files = files, !files.isEmpty {
-            return MultipartRequestBody(params: params, files: files)
-        } else if let params = params, !params.isEmpty {
-            return try JsonRequestBody(params: params)
-        } else {
-            return nil
+    private func ensureValidToken() async throws -> String {
+        if let existingToken = token, !existingToken.isEmpty {
+            return existingToken
+        }
+
+        if refreshToken != nil {
+            try await refresh()
+            if let refreshedToken = token, !refreshedToken.isEmpty {
+                return refreshedToken
+            }
+        }
+
+        try await authenticate()
+
+        guard let validToken = token, !validToken.isEmpty else {
+            throw LaraApiError(statusCode: 401, type: "AuthenticationError", message: "No valid access token available")
+        }
+
+        return validToken
+    }
+
+    private func authenticate() async throws {
+        guard let accessKeyId = accessKeyId, let accessKeySecret = accessKeySecret else {
+            throw LaraApiError(statusCode: 401, type: "AuthenticationError", message: "No authentication credentials available")
+        }
+
+        let authParams = ["id": accessKeyId]
+        let bodyData = try JSONSerialization.data(withJSONObject: authParams)
+
+        let dateString = httpDate()
+        let path = "/v2/auth"
+
+        var headers: [String: String] = [
+            "Date": dateString,
+            "X-Lara-SDK-Name": "lara-swift",
+            "Content-MD5": md5(data: bodyData),
+            "Content-Type": "application/json"
+        ]
+
+        if let version = Version.get() {
+            headers["X-Lara-SDK-Version"] = version
+        }
+
+        let signature = generateSignature(
+            method: "POST",
+            path: path,
+            body: bodyData,
+            date: dateString,
+            secret: accessKeySecret,
+            contentType: "application/json"
+        )
+
+        headers["Authorization"] = "Lara:\(signature)"
+
+        let response: ClientResponse = try await makeAuthRequest(
+            method: "POST",
+            path: path,
+            params: authParams,
+            headers: headers
+        )
+
+        let authData = try response.decoder.decode([String: String].self, from: response.data)
+
+        guard let authToken = authData["token"], !authToken.isEmpty else {
+            throw LaraApiError(statusCode: response.httpResponse.statusCode, type: "AuthenticationError", message: "Failed to obtain access token. Response: \(authData)")
+        }
+
+        self.token = authToken
+        self.refreshToken = authData["refresh_token"]
+    }
+
+    private func refresh() async throws {
+        guard let refreshToken = refreshToken else {
+            throw LaraApiError(statusCode: 401, type: "AuthenticationError", message: "No refresh token available")
+        }
+
+        let response: ClientResponse = try await makeAuthRequest(
+            method: "POST",
+            path: "/v2/auth/refresh",
+            headers: ["Authorization": "Bearer \(refreshToken)"]
+        )
+
+        let refreshData = try response.decoder.decode([String: String].self, from: response.data)
+
+        guard let refreshAuthToken = refreshData["token"], !refreshAuthToken.isEmpty else {
+            self.token = nil
+            self.refreshToken = nil
+            throw LaraApiError(statusCode: response.httpResponse.statusCode, type: "AuthenticationError", message: "Failed to refresh access token")
+        }
+
+        self.token = refreshAuthToken
+        self.refreshToken = refreshData["refresh_token"]
+    }
+
+    private func makeAuthRequest(method: String, path: String, params: [String: Any]? = nil, headers: [String: String]? = nil) async throws -> ClientResponse {
+        let fullUrl = baseUrl.appendingPathComponent(path.hasPrefix("/") ? path : "/" + path)
+
+        var request = URLRequest(url: fullUrl)
+        request.httpMethod = method
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+
+        let dateString = httpDate()
+        request.setValue(dateString, forHTTPHeaderField: "Date")
+        request.setValue("lara-swift", forHTTPHeaderField: "X-Lara-SDK-Name")
+        if let version = Version.get() {
+            request.setValue(version, forHTTPHeaderField: "X-Lara-SDK-Version")
+        }
+
+        headers?.forEach { key, value in request.setValue(value, forHTTPHeaderField: key) }
+
+        if let params = params, !params.isEmpty {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONSerialization.data(withJSONObject: params)
+        }
+
+        return try await executeRequest(request)
+    }
+
+    private func prune(_ params: [String: Any]?) -> [String: Any] {
+        guard let params = params else { return [:] }
+        return params.compactMapValues { value in
+            switch value {
+            case is NSNull, Optional<Any>.none:
+                return nil
+            default:
+                return value
+            }
         }
     }
+
 
     private func createBodyData(from requestBody: RequestBody) throws -> Data {
         let outputStream = OutputStream.toMemory()
@@ -133,8 +363,55 @@ public class Client {
         return ClientResponse(data: data, httpResponse: httpResponse, decoder: self.jsonDecoder)
     }
 
-    private func normalize(path: String) -> String {
-        path.hasPrefix("/") ? path : "/" + path
+    private func executeStreamRequest(_ request: URLRequest, callback: ((Any) -> Void)?) async throws -> (ClientResponse, shouldRetryAuth: Bool) {
+        let (bytes, urlResponse) = try await URLSession.shared.bytes(for: request)
+
+        guard let httpResponse = urlResponse as? HTTPURLResponse else {
+            throw LaraApiConnectionError("Failed to get response")
+        }
+
+        if !(200..<300).contains(httpResponse.statusCode) && httpResponse.statusCode != 401 {
+            var errorData = Data()
+            for try await byte in bytes {
+                errorData.append(byte)
+            }
+            let error: [String: Any] = (try? JSONSerialization.jsonObject(with: errorData, options: []) as? [String: Any])?["error"] as? [String: Any] ?? [:]
+            throw LaraApiError(
+                statusCode: httpResponse.statusCode,
+                type: error["type"] as? String ?? "UnknownError",
+                message: error["message"] as? String ?? "An unknown error occurred"
+            )
+        }
+
+        var lastData: Data?
+        var lastResult: [String: Any]?
+
+        for try await line in bytes.lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmedLine.isEmpty { continue }
+
+            if let data = trimmedLine.data(using: .utf8),
+               let parsed = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                lastResult = parsed
+                let result = parsed["content"] ?? parsed
+                if let content = parsed["content"] {
+                    lastData = try? JSONSerialization.data(withJSONObject: content, options: [])
+                } else {
+                    lastData = data
+                }
+                callback?(result)
+            }
+        }
+
+        let shouldRetryAuth = httpResponse.statusCode == 401 &&
+                             (lastResult?["message"] as? String) == "jwt expired"
+
+        guard let finalData = lastData else {
+            throw LaraApiError(statusCode: 500, type: "StreamingError", message: "No data received from stream")
+        }
+
+        let response = ClientResponse(data: finalData, httpResponse: httpResponse, decoder: self.jsonDecoder)
+        return (response, shouldRetryAuth: shouldRetryAuth)
     }
 
     private func httpDate() -> String {
@@ -150,36 +427,24 @@ public class Client {
         return Static.formatter.string(from: Date())
     }
 
-    private func sign(method: String, path: String, date: String, contentType: String, md5: String?) -> String {
-        let challenge: String
-        if let md5 = md5 {
-            challenge = "\(method)\n\(path)\n\(md5)\n\(contentType)\n\(date)"
-        } else {
-            challenge = "\(method)\n\(path)\n\n\(contentType)\n\(date)"
-        }
-        return hmacSHA256(key: accessKeySecret, message: challenge)
+    // MARK: - Cryptographic Functions
+
+    private func md5(data: Data) -> String {
+        let digest = Insecure.MD5.hash(data: data)
+        return Data(digest).base64EncodedString()
     }
 
-    private func hmacSHA256(key: String, message: String) -> String {
-        guard let keyData = key.data(using: .utf8) else {
-            fatalError("Failed to convert key to UTF-8 data")
-        }
-        guard let msgData = message.data(using: .utf8) else {
-            fatalError("Failed to convert message to UTF-8 data")
-        }
-        var digest = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
+    private func hmacSHA256(key: String, data: String) -> String {
+        let keyData = key.data(using: .utf8)!
+        let dataData = data.data(using: .utf8)!
+        let symmetricKey = SymmetricKey(data: keyData)
+        let signature = HMAC<SHA256>.authenticationCode(for: dataData, using: symmetricKey)
+        return Data(signature).base64EncodedString()
+    }
 
-        keyData.withUnsafeBytes { keyBytes in
-            msgData.withUnsafeBytes { msgBytes in
-                CCHmac(CCHmacAlgorithm(kCCHmacAlgSHA256),
-                       keyBytes.baseAddress!,
-                       keyBytes.count,
-                       msgBytes.baseAddress!,
-                       msgBytes.count,
-                       &digest)
-            }
-        }
-
-        return Data(digest).base64EncodedString()
+    private func generateSignature(method: String, path: String, body: Data, date: String, secret: String, contentType: String = "application/json") -> String {
+        let contentMD5 = md5(data: body)
+        let challenge = "\(method)\n\(path)\n\(contentMD5)\n\(contentType)\n\(date)"
+        return hmacSHA256(key: secret, data: challenge)
     }
 }
