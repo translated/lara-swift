@@ -17,6 +17,11 @@ public enum TranslationStyle: String, Codable {
     case creative
 }
 
+public enum TranslationMetadata {
+    case string(String)
+    case object([String: Any])
+}
+
 public struct TranslateOptions {
     public var sourceHint: String?
     public var adaptTo: [String]?
@@ -33,6 +38,7 @@ public struct TranslateOptions {
     public var headers: [String: String]?
     public var style: TranslationStyle?
     public var reasoning: Bool?
+    public var metadata: TranslationMetadata?
 
     public init(sourceHint: String? = nil,
                 adaptTo: [String]? = nil,
@@ -48,7 +54,8 @@ public struct TranslateOptions {
                 verbose: Bool? = nil,
                 headers: [String: String]? = nil,
                 style: TranslationStyle? = nil,
-                reasoning: Bool? = nil) {
+                reasoning: Bool? = nil,
+                metadata: TranslationMetadata? = nil) {
         self.sourceHint = sourceHint
         self.adaptTo = adaptTo
         self.glossaries = glossaries
@@ -64,6 +71,7 @@ public struct TranslateOptions {
         self.headers = headers
         self.style = style
         self.reasoning = reasoning
+        self.metadata = metadata
     }
 
     public func toParams() -> [String: Any] {
@@ -107,6 +115,14 @@ public struct TranslateOptions {
         }
         if let reasoning = self.reasoning {
             params["reasoning"] = reasoning
+        }
+        if let metadata = self.metadata {
+            switch metadata {
+            case .string(let value):
+                params["metadata"] = value
+            case .object(let value):
+                params["metadata"] = value
+            }
         }
 
         return params
