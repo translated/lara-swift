@@ -10,6 +10,11 @@ public enum AudioStatus: String, Codable {
     case error = "error"
 }
 
+public enum VoiceGender: String, Codable {
+    case male = "male"
+    case female = "female"
+}
+
 public struct AudioOptions: Codable {
 
     public var adaptTo: [String]?
@@ -20,11 +25,14 @@ public struct AudioOptions: Codable {
 
     public var style: TranslationStyle?
 
-    public init(adaptTo: [String]? = nil, glossaries: [String]? = nil, noTrace: Bool? = nil, style: TranslationStyle? = nil) {
+    public var voiceGender: VoiceGender?
+
+    public init(adaptTo: [String]? = nil, glossaries: [String]? = nil, noTrace: Bool? = nil, style: TranslationStyle? = nil, voiceGender: VoiceGender? = nil) {
         self.adaptTo = adaptTo
         self.glossaries = glossaries
         self.noTrace = noTrace
         self.style = style
+        self.voiceGender = voiceGender
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -32,6 +40,7 @@ public struct AudioOptions: Codable {
         case glossaries
         case noTrace = "no_trace"
         case style
+        case voiceGender = "voice_gender"
     }
 }
 
@@ -45,11 +54,14 @@ public struct AudioUploadOptions {
 
     public var style: TranslationStyle?
 
-    public init(adaptTo: [String]? = nil, glossaries: [String]? = nil, noTrace: Bool? = nil, style: TranslationStyle? = nil) {
+    public var voiceGender: VoiceGender?
+
+    public init(adaptTo: [String]? = nil, glossaries: [String]? = nil, noTrace: Bool? = nil, style: TranslationStyle? = nil, voiceGender: VoiceGender? = nil) {
         self.adaptTo = adaptTo
         self.glossaries = glossaries
         self.noTrace = noTrace
         self.style = style
+        self.voiceGender = voiceGender
     }
 
     public func toParams() -> [String: Any] {
@@ -65,6 +77,10 @@ public struct AudioUploadOptions {
 
         if let style = style {
             params["style"] = style.rawValue
+        }
+
+        if let voiceGender = voiceGender {
+            params["voice_gender"] = voiceGender.rawValue
         }
 
         return params
