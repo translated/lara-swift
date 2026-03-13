@@ -10,6 +10,7 @@ public class Client {
 
     private var token: String?
     private var refreshToken: String?
+    private var tokenExpiresAtMs: Int64 = 0
 
     public let connectionTimeout: TimeInterval
     public let readTimeout: TimeInterval
@@ -34,6 +35,7 @@ public class Client {
         self.readTimeout = options.readTimeout
         self.token = authToken.token
         self.refreshToken = authToken.refreshToken
+        self.tokenExpiresAtMs = Client.parseJwtExpiresAtMs(authToken.token)
     }
 
     @available(*, deprecated, message: "Use init(accessKey:) with AccessKey instead")
@@ -81,7 +83,7 @@ public class Client {
     }
 
     // MARK: - Core request
-    private func request(method: String, path: String, params: [String: Any]?, files: [String: MultipartFile]?, headers: [String: String]?) async throws -> ClientResponse {
+    private func request(method: String, path: String, params: [String: Any]?, files: [String: MultipartFile]?, headers: [String: String]?, isRetry: Bool = false) async throws -> ClientResponse {
         let token = try await ensureValidToken()
 
         let prunedParams = prune(params)
@@ -138,9 +140,9 @@ public class Client {
 
         let response = try await executeRequest(urlRequest)
 
-        if response.httpResponse.statusCode == 401 {
-            self.token = nil
-            return try await request(method: method, path: path, params: params, files: files, headers: headers)
+        if response.httpResponse.statusCode == 401 && !isRetry {
+            try await refreshOrReauthenticate()
+            return try await request(method: method, path: path, params: params, files: files, headers: headers, isRetry: true)
         }
 
         if !(200..<300).contains(response.httpResponse.statusCode) {
@@ -198,7 +200,7 @@ public class Client {
         let (response, shouldRetryAuth) = try await executeStreamRequest(urlRequest, callback: callback)
 
         if shouldRetryAuth && !isRetry {
-            self.token = nil
+            try await refreshOrReauthenticate()
             return try await streamRequest(path: path, params: params, files: files, headers: headers, callback: callback, isRetry: true)
         }
 
@@ -206,24 +208,60 @@ public class Client {
     }
 
     private func ensureValidToken() async throws -> String {
-        if let existingToken = token, !existingToken.isEmpty {
+        if let existingToken = token, !existingToken.isEmpty, !isTokenExpired() {
             return existingToken
         }
 
-        if refreshToken != nil {
-            try await refresh()
-            if let refreshedToken = token, !refreshedToken.isEmpty {
-                return refreshedToken
-            }
-        }
-
-        try await authenticate()
+        try await refreshOrReauthenticate()
 
         guard let validToken = token, !validToken.isEmpty else {
             throw LaraApiError(statusCode: 401, type: "AuthenticationError", message: "No valid access token available")
         }
 
         return validToken
+    }
+
+    private func refreshOrReauthenticate() async throws {
+        if let rt = refreshToken, !rt.isEmpty {
+            do {
+                try await refresh()
+                return
+            } catch {
+                if accessKeyId == nil || accessKeySecret == nil { throw error }
+            }
+        }
+
+        if accessKeyId != nil && accessKeySecret != nil {
+            try await authenticate()
+            return
+        }
+
+        throw LaraApiConnectionError("No authentication method available for token renewal")
+    }
+
+    private func isTokenExpired() -> Bool {
+        return tokenExpiresAtMs <= Int64(Date().timeIntervalSince1970 * 1000) + 5000
+    }
+
+    private static func parseJwtExpiresAtMs(_ token: String) -> Int64 {
+        let parts = token.split(separator: ".")
+        guard parts.count == 3 else { return 0 }
+
+        var base64 = String(parts[1])
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        let remainder = base64.count % 4
+        if remainder > 0 {
+            base64 += String(repeating: "=", count: 4 - remainder)
+        }
+
+        guard let data = Data(base64Encoded: base64),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let exp = json["exp"] as? Double else {
+            return 0
+        }
+
+        return Int64(exp * 1000)
     }
 
     private func authenticate() async throws {
@@ -273,7 +311,8 @@ public class Client {
         }
 
         self.token = authToken
-        self.refreshToken = authData["refresh_token"]
+        self.refreshToken = response.httpResponse.value(forHTTPHeaderField: "X-Lara-Refresh-Token")
+        self.tokenExpiresAtMs = Client.parseJwtExpiresAtMs(authToken)
     }
 
     private func refresh() async throws {
@@ -296,7 +335,8 @@ public class Client {
         }
 
         self.token = refreshAuthToken
-        self.refreshToken = refreshData["refresh_token"]
+        self.refreshToken = response.httpResponse.value(forHTTPHeaderField: "X-Lara-Refresh-Token")
+        self.tokenExpiresAtMs = Client.parseJwtExpiresAtMs(refreshAuthToken)
     }
 
     private func makeAuthRequest(method: String, path: String, params: [String: Any]? = nil, headers: [String: String]? = nil) async throws -> ClientResponse {
@@ -403,8 +443,7 @@ public class Client {
             }
         }
 
-        let shouldRetryAuth = httpResponse.statusCode == 401 &&
-                             (lastResult?["message"] as? String) == "jwt expired"
+        let shouldRetryAuth = httpResponse.statusCode == 401
 
         guard let finalData = lastData else {
             throw LaraApiError(statusCode: 500, type: "StreamingError", message: "No data received from stream")
