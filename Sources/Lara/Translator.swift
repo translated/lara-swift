@@ -150,7 +150,26 @@ public class Translator {
             params["passlist"] = passlist
         }
 
-        let response = try await laraClient.post(path: "/v2/detect", params: params)
+        let response = try await laraClient.post(path: "/v2/detect/language", params: params)
         return try response.decoded(as: DetectResult.self)
+    }
+
+    // MARK: - Profanity Detection
+
+    /// Detect profanities in the given text
+    /// - Parameters:
+    ///   - text: text to check for profanities
+    ///   - language: language code (e.g. "en")
+    ///   - contentType: content type — .text, .html, .xml, or .xliff
+    /// - Returns: profanity detection result
+    public func detectProfanities(text: String, language: String, contentType: ContentType = .text) async throws -> ProfanityDetectResult {
+        let params: [String: Any] = [
+            "text": text,
+            "language": language,
+            "content_type": contentType.rawValue
+        ]
+
+        let response = try await laraClient.post(path: "/v2/detect/profanities", params: params)
+        return try response.decoded(as: ProfanityDetectResult.self)
     }
 }

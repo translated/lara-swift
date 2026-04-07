@@ -23,6 +23,13 @@ public enum ProfanityFilter: String {
     case hide
 }
 
+public enum ContentType: String {
+    case text = "text/plain"
+    case html = "text/html"
+    case xml = "text/xml"
+    case xliff = "application/xliff+xml"
+}
+
 public enum TranslationMetadata {
     case string(String)
     case object([String: Any])
