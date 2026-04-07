@@ -8,8 +8,9 @@ public class TextResult: Codable {
     public let glossaries: [String]?
     public let adaptedToMatches: AdaptedToMatches?
     public let glossariesMatches: GlossariesMatches?
+    public let profanities: ProfanitiesValue?
     
-    public init(contentType: String, sourceLanguage: String, translation: TranslatedValue, adaptedTo: [String], glossaries: [String]?, adaptedToMatches: AdaptedToMatches?, glossariesMatches: GlossariesMatches?) {
+    public init(contentType: String, sourceLanguage: String, translation: TranslatedValue, adaptedTo: [String], glossaries: [String]?, adaptedToMatches: AdaptedToMatches?, glossariesMatches: GlossariesMatches?, profanities: ProfanitiesValue? = nil) {
         self.contentType = contentType
         self.sourceLanguage = sourceLanguage
         self.translation = translation
@@ -17,6 +18,7 @@ public class TextResult: Codable {
         self.glossaries = glossaries
         self.adaptedToMatches = adaptedToMatches
         self.glossariesMatches = glossariesMatches
+        self.profanities = profanities
     }
     
     public required convenience init(from decoder: Decoder) throws {
@@ -28,8 +30,9 @@ public class TextResult: Codable {
         let glossaries = try container.decodeIfPresent([String].self, forKey: .glossaries)
         let adaptedToMatches = try container.decodeIfPresent(AdaptedToMatches.self, forKey: .adaptedToMatches)
         let glossariesMatches = try container.decodeIfPresent(GlossariesMatches.self, forKey: .glossariesMatches)
+        let profanities = try container.decodeIfPresent(ProfanitiesValue.self, forKey: .profanities)
 
-        self.init(contentType: contentType, sourceLanguage: sourceLanguage, translation: translation, adaptedTo: adaptedTo, glossaries: glossaries, adaptedToMatches: adaptedToMatches, glossariesMatches: glossariesMatches)
+        self.init(contentType: contentType, sourceLanguage: sourceLanguage, translation: translation, adaptedTo: adaptedTo, glossaries: glossaries, adaptedToMatches: adaptedToMatches, glossariesMatches: glossariesMatches, profanities: profanities)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -41,6 +44,7 @@ public class TextResult: Codable {
         try container.encodeIfPresent(glossaries, forKey: .glossaries)
         try container.encodeIfPresent(adaptedToMatches, forKey: .adaptedToMatches)
         try container.encodeIfPresent(glossariesMatches, forKey: .glossariesMatches)
+        try container.encodeIfPresent(profanities, forKey: .profanities)
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -51,5 +55,6 @@ public class TextResult: Codable {
         case glossaries
         case adaptedToMatches = "adapted_to_matches"
         case glossariesMatches = "glossaries_matches"
+        case profanities
     }
 }

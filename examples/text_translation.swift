@@ -101,18 +101,44 @@ func main() async {
             print("Italian (with all options): \(translations.first ?? "No translation")\n")
         }
 
-        // Example 7: Get available languages
+        // Example 7: Translation with profanity filter
+        print("=== Translation with Profanity Filter ===")
+        let profanityText = "Don't be such a tool."
+        let detectOpts = TranslateOptions(profanityFilter: .detect)
+        let profResult = try await lara.translate(text: profanityText, source: "en-US", target: "it-IT", options: detectOpts)
+        print("Original: \(profanityText)")
+        if let t = try? profResult.translation.getTranslation() {
+            print("Detect mode: \(t)")
+        }
+        if let profanities = profResult.profanities {
+            print("Masked text: \(profanities.maskedText)")
+            print("Profanities found: \(profanities.profanities.count)")
+        }
+
+        let hideOpts = TranslateOptions(profanityFilter: .hide)
+        let hideProfResult = try await lara.translate(text: profanityText, source: "en-US", target: "it-IT", options: hideOpts)
+        if let t = try? hideProfResult.translation.getTranslation() {
+            print("Hide mode: \(t)")
+        }
+
+        let avoidOpts = TranslateOptions(profanityFilter: .avoid)
+        let avoidProfResult = try await lara.translate(text: profanityText, source: "en-US", target: "it-IT", options: avoidOpts)
+        if let t = try? avoidProfResult.translation.getTranslation() {
+            print("Avoid mode: \(t)\n")
+        }
+
+        // Example 8: Get available languages
         print("=== Available Languages ===")
         let languages = try await lara.getLanguages()
         print("Supported languages: \(languages)")
 
-        // Example 8: Detect language of a given text
+        // Example 9: Detect language of a given text
         print("=== Language Detection ===")
         let detectResult = try await lara.detect(text: "Hola, ¿cómo estás?")
         print("Text: Hola, ¿cómo estás?")
         print("Detected Language: \(detectResult.language)")
 
-        // Example 9: Detect languages with hint and passlist
+        // Example 10: Detect languages with hint and passlist
         print("=== Language Detection with Hint and Passlist ===")
         let detectResult2 = try await lara.detect(text: "Hola, ¿cómo estás?", hint: "es", passlist: ["es", "pt", "it"])
         print("Text: Hola, ¿cómo estás?")

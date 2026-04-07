@@ -17,6 +17,12 @@ public enum TranslationStyle: String, Codable {
     case creative
 }
 
+public enum ProfanityFilter: String {
+    case detect
+    case avoid
+    case hide
+}
+
 public enum TranslationMetadata {
     case string(String)
     case object([String: Any])
@@ -39,6 +45,7 @@ public struct TranslateOptions {
     public var style: TranslationStyle?
     public var reasoning: Bool?
     public var metadata: TranslationMetadata?
+    public var profanityFilter: ProfanityFilter?
 
     public init(sourceHint: String? = nil,
                 adaptTo: [String]? = nil,
@@ -55,7 +62,8 @@ public struct TranslateOptions {
                 headers: [String: String]? = nil,
                 style: TranslationStyle? = nil,
                 reasoning: Bool? = nil,
-                metadata: TranslationMetadata? = nil) {
+                metadata: TranslationMetadata? = nil,
+                profanityFilter: ProfanityFilter? = nil) {
         self.sourceHint = sourceHint
         self.adaptTo = adaptTo
         self.glossaries = glossaries
@@ -72,6 +80,7 @@ public struct TranslateOptions {
         self.style = style
         self.reasoning = reasoning
         self.metadata = metadata
+        self.profanityFilter = profanityFilter
     }
 
     public func toParams() -> [String: Any] {
@@ -123,6 +132,9 @@ public struct TranslateOptions {
             case .object(let value):
                 params["metadata"] = value
             }
+        }
+        if let profanityFilter = self.profanityFilter {
+            params["profanity_filter"] = profanityFilter.rawValue
         }
 
         return params
