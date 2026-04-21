@@ -14,6 +14,7 @@ All major translation features are accessible, making it easy to integrate and c
 - **Audio Translation**: MP3, WAV, and other audio formats with status monitoring
 - **Translation Memory**: Store and reuse translations for consistency
 - **Glossaries**: Enforce terminology standards across translations
+- **Styleguides**: Apply custom translation style rules with detailed change reasoning
 - **Language Detection**: Automatic source language identification
 - **Advanced Options**: Translation instructions and more
 
@@ -73,6 +74,7 @@ export LARA_ACCESS_KEY_SECRET="your-access-key-secret"
   - TextBlocks translation (mixed translatable/non-translatable content)
   - Auto-detect source language
   - Advanced translation options
+  - Translation with styleguides
   - Get available languages
   - Language Detection
 
@@ -458,6 +460,52 @@ let csvExport = try await lara.glossaries.export(id: "gls_1A2b3C4d5E6f7G8h9I0jKl
 let termCounts = try await lara.glossaries.counts(id: "gls_1A2b3C4d5E6f7G8h9I0jKl")
 ```
 
+### 🎨 Styleguides
+
+Styleguides let you apply custom translation style rules. They can be listed and retrieved through the SDK.
+
+```swift
+// List all styleguides
+let styleguides = try await lara.styleguides.list()
+
+// Get a specific styleguide by ID
+let styleguide = try await lara.styleguides.get(id: "stg_1A2b3C4d5E6f7G8h9I0jKl")
+```
+
+#### Translate with a styleguide
+
+```swift
+let options = TranslateOptions(styleguideId: "stg_1A2b3C4d5E6f7G8h9I0jKl")  // Replace with actual styleguide ID
+
+let result = try await lara.translate(text: "Hello, world!", source: "en-US", target: "it-IT", options: options)
+```
+
+#### Styleguide reasoning
+
+Enable reasoning to see what the styleguide changed and why:
+
+```swift
+let options = TranslateOptions(
+    styleguideId: "stg_1A2b3C4d5E6f7G8h9I0jKl",
+    styleguideReasoning: true,
+    styleguideExplanationLanguage: "en-US"
+)
+
+let result = try await lara.translate(text: "Hello, world!", source: "en-US", target: "it-IT", options: options)
+
+if let sgResults = result.styleguideResults {
+    if let origTranslation = try? sgResults.originalTranslation.getTranslation() {
+        print("Original translation: \(origTranslation)")
+    }
+
+    for change in sgResults.changes {
+        print("Before: \(change.originalTranslation)")
+        print("After:  \(change.refinedTranslation)")
+        print("Why:    \(change.explanation)")
+    }
+}
+```
+
 ### Translation Options
 
 ```swift
@@ -470,7 +518,10 @@ let options = TranslateOptions(
     multiline: true,                                      // Enable multiline translation
     timeoutMs: 10000,                                     // Request timeout in milliseconds
     noTrace: false,                                       // Disable request tracing
-    verbose: false                                        // Enable verbose response
+    verbose: false,                                       // Enable verbose response
+    styleguideId: "stg_id",                               // Styleguide ID to apply
+    styleguideReasoning: true,                            // Enable styleguide change reasoning
+    styleguideExplanationLanguage: "en-US"                // Language for change explanations
 )
 ```
 

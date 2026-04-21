@@ -53,6 +53,9 @@ public struct TranslateOptions {
     public var reasoning: Bool?
     public var metadata: TranslationMetadata?
     public var profanityFilter: ProfanityFilter?
+    public var styleguideId: String?
+    public var styleguideReasoning: Bool?
+    public var styleguideExplanationLanguage: String?
 
     public init(sourceHint: String? = nil,
                 adaptTo: [String]? = nil,
@@ -70,7 +73,10 @@ public struct TranslateOptions {
                 style: TranslationStyle? = nil,
                 reasoning: Bool? = nil,
                 metadata: TranslationMetadata? = nil,
-                profanityFilter: ProfanityFilter? = nil) {
+                profanityFilter: ProfanityFilter? = nil,
+                styleguideId: String? = nil,
+                styleguideReasoning: Bool? = nil,
+                styleguideExplanationLanguage: String? = nil) {
         self.sourceHint = sourceHint
         self.adaptTo = adaptTo
         self.glossaries = glossaries
@@ -88,6 +94,9 @@ public struct TranslateOptions {
         self.reasoning = reasoning
         self.metadata = metadata
         self.profanityFilter = profanityFilter
+        self.styleguideId = styleguideId
+        self.styleguideReasoning = styleguideReasoning
+        self.styleguideExplanationLanguage = styleguideExplanationLanguage
     }
 
     public func toParams() -> [String: Any] {
@@ -142,6 +151,15 @@ public struct TranslateOptions {
         }
         if let profanityFilter = self.profanityFilter {
             params["profanity_filter"] = profanityFilter.rawValue
+        }
+        if let styleguideId = self.styleguideId {
+            params["styleguide_id"] = styleguideId
+        }
+        if let styleguideReasoning = self.styleguideReasoning {
+            params["styleguide_reasoning"] = styleguideReasoning
+        }
+        if let styleguideExplanationLanguage = self.styleguideExplanationLanguage {
+            params["styleguide_explanation_language"] = styleguideExplanationLanguage
         }
 
         return params

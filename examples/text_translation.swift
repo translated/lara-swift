@@ -10,6 +10,7 @@ import Foundation
 // - TextBlocks translation (mixed translatable/non-translatable content)
 // - Auto-detect source language
 // - Advanced translation options
+// - Translation with styleguides
 // - Get available languages
 // - Language Detection
 
@@ -127,18 +128,95 @@ func main() async {
             print("Avoid mode: \(t)\n")
         }
 
-        // Example 8: Get available languages
+        // Example 8: List available styleguides
+        print("=== List Available Styleguides ===")
+        var styleguideId: String? = nil
+        let styleguides = try await lara.styleguides.list()
+        print("Total styleguides: \(styleguides.count)")
+        for sg in styleguides {
+            print("  - \(sg.name) (ID: \(sg.id))")
+        }
+        if let first = styleguides.first {
+            styleguideId = first.id
+        }
+        print()
+
+        // Example 9: Get a specific styleguide by ID
+        if let sgId = styleguideId {
+            print("=== Get Styleguide Details ===")
+            if let styleguide = try await lara.styleguides.get(id: sgId) {
+                print("Name: \(styleguide.name)")
+                print("ID: \(styleguide.id)")
+                print("Owner: \(styleguide.ownerId)")
+                print("Created: \(styleguide.createdAt)")
+                print("Updated: \(styleguide.updatedAt)")
+            }
+            print()
+        }
+
+        // Example 10: Translate with a styleguide
+        if let sgId = styleguideId {
+            print("=== Translate with Styleguide ===")
+            let sgOptions = TranslateOptions(styleguideId: sgId)
+            let sgResult = try await lara.translate(
+                text: "Our team is excited to announce that the new feature is now available for all users.",
+                source: "en-US", target: "it-IT", options: sgOptions
+            )
+            if let t = try? sgResult.translation.getTranslation() {
+                print("Original: Our team is excited to announce that the new feature is now available for all users.")
+                print("Italian (with styleguide): \(t)\n")
+            }
+        }
+
+        // Example 11: Translate with styleguide reasoning
+        if let sgId = styleguideId {
+            print("=== Translate with Styleguide Reasoning ===")
+            let sgReasoningOptions = TranslateOptions(
+                styleguideId: sgId,
+                styleguideReasoning: true,
+                styleguideExplanationLanguage: "en-US"
+            )
+            let sgReasoningResult = try await lara.translate(
+                text: "Please submit the required documentation before the deadline.",
+                source: "en-US", target: "it-IT", options: sgReasoningOptions
+            )
+            if let t = try? sgReasoningResult.translation.getTranslation() {
+                print("Original: Please submit the required documentation before the deadline.")
+                print("Italian (with styleguide): \(t)")
+            }
+
+            if let sgResults = sgReasoningResult.styleguideResults {
+                if let origTranslation = try? sgResults.originalTranslation.getTranslation() {
+                    print("Original translation (before styleguide): \(origTranslation)")
+                }
+
+                if !sgResults.changes.isEmpty {
+                    print("Changes applied: \(sgResults.changes.count)")
+                    for change in sgResults.changes {
+                        print("  Change ID: \(change.id ?? "N/A")")
+                        print("  Before: \(change.originalTranslation)")
+                        print("  After:  \(change.refinedTranslation)")
+                        print("  Why:    \(change.explanation)")
+                    }
+                } else {
+                    print("No changes were needed — translation already matches the styleguide.")
+                }
+            }
+            print()
+        }
+
+        // Example 12: Get available languages
         print("=== Available Languages ===")
         let languages = try await lara.getLanguages()
         print("Supported languages: \(languages)")
 
-        // Example 9: Detect language of a given text
+        // Example 13: Detect language of a given text
         print("=== Language Detection ===")
         let detectResult = try await lara.detect(text: "Hola, ¿cómo estás?")
         print("Text: Hola, ¿cómo estás?")
         print("Detected Language: \(detectResult.language)")
 
-        // Example 10: Detect languages with hint and passlist
+        // Example 14: Detect languages with hint and passlist
         print("=== Language Detection with Hint and Passlist ===")
         let detectResult2 = try await lara.detect(text: "Hola, ¿cómo estás?", hint: "es", passlist: ["es", "pt", "it"])
         print("Text: Hola, ¿cómo estás?")

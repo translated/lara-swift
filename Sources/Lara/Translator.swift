@@ -5,6 +5,7 @@ public class Translator {
     private let laraClient: Client
     public let memories: Memories
     public let glossaries: Glossaries
+    public let styleguides: Styleguides
     public let documents: Documents
     public let images: ImageTranslator
     public let audio: AudioTranslator
@@ -16,6 +17,7 @@ public class Translator {
         self.laraClient = Client(accessKey: accessKey, options: clientOptions)
         self.memories = Memories(client: laraClient)
         self.glossaries = Glossaries(client: laraClient)
+        self.styleguides = Styleguides(client: laraClient)
         self.documents = Documents(client: laraClient)
         self.images = ImageTranslator(client: laraClient)
         self.audio = AudioTranslator(client: laraClient)
@@ -25,6 +27,7 @@ public class Translator {
         self.laraClient = Client(authToken: authToken, options: clientOptions)
         self.memories = Memories(client: laraClient)
         self.glossaries = Glossaries(client: laraClient)
+        self.styleguides = Styleguides(client: laraClient)
         self.documents = Documents(client: laraClient)
         self.images = ImageTranslator(client: laraClient)
         self.audio = AudioTranslator(client: laraClient)
