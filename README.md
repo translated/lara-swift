@@ -211,6 +211,30 @@ let options = TranslateOptions(
 let advancedTranslation = try await lara.translate(text: "Hello", source: "en", target: "fr", options: options)
 ```
 
+#### Quality Estimation
+
+Use `qualityEstimation()` to score how well a translation matches its source. Pass a single sentence/translation pair to get a single result, or two parallel arrays to get one result per pair.
+
+```swift
+// Single pair
+let single = try await lara.qualityEstimation(
+    source: "en-US",
+    target: "it-IT",
+    sentence: "Hello, how are you today?",
+    translation: "Ciao, come stai oggi?"
+)
+print(single.score) // e.g. 0.768
+
+// Batch
+let batch = try await lara.qualityEstimation(
+    source: "en-US",
+    target: "it-IT",
+    sentence: ["Good morning.", "The weather is nice."],
+    translation: ["Buongiorno.", "Il tempo è bello."]
+)
+print(batch.map(\.score)) // e.g. [0.751, 0.713]
+```
+
 ### 📖 Document Translation
 #### Simple document translation
 ```swift

@@ -175,4 +175,30 @@ public class Translator {
         let response = try await laraClient.post(path: "/v2/detect/profanities", params: params)
         return try response.decoded(as: ProfanityDetectResult.self)
     }
+
+    // MARK: - Quality Estimation
+
+    public func qualityEstimation(source: String, target: String, sentence: String, translation: String) async throws -> QualityEstimationResult {
+        let params: [String: Any] = [
+            "source": source,
+            "target": target,
+            "sentence": sentence,
+            "translation": translation
+        ]
+
+        let response = try await laraClient.post(path: "/v2/detect/quality-estimation", params: params)
+        return try response.decoded(as: QualityEstimationResult.self)
+    }
+
+    public func qualityEstimation(source: String, target: String, sentence: [String], translation: [String]) async throws -> [QualityEstimationResult] {
+        let params: [String: Any] = [
+            "source": source,
+            "target": target,
+            "sentence": sentence,
+            "translation": translation
+        ]
+
+        let response = try await laraClient.post(path: "/v2/detect/quality-estimation", params: params)
+        return try response.decoded(as: [QualityEstimationResult].self)
+    }
 }

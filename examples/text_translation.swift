@@ -222,6 +222,26 @@ func main() async {
         print("Text: Hola, ¿cómo estás?")
         print("Detected Language: \(detectResult2.language)")
 
+        // Example 11: Quality estimation for a single sentence pair
+        print("=== Quality Estimation: single sentence ===")
+        let qeSingle = try await lara.qualityEstimation(
+            source: "en-US",
+            target: "it-IT",
+            sentence: "Hello, how are you today?",
+            translation: "Ciao, come stai oggi?"
+        )
+        print("Score: \(qeSingle.score)\n")
+
+        // Example 12: Quality estimation for a batch of sentence pairs
+        print("=== Quality Estimation: batch ===")
+        let qeBatch = try await lara.qualityEstimation(
+            source: "en-US",
+            target: "it-IT",
+            sentence: ["Good morning.", "The weather is nice."],
+            translation: ["Buongiorno.", "Il tempo è bello."]
+        )
+        print("Scores: \(qeBatch.map { $0.score }.map(String.init).joined(separator: \", \"))\n")
+
     } catch {
         print("❌ General error: \(error.localizedDescription)")
     }
