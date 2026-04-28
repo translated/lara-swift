@@ -17,9 +17,11 @@ public struct DetectedProfanity: Codable {
 public struct ProfanityDetectResult: Codable {
     public let maskedText: String
     public let profanities: [DetectedProfanity]
+    public let error: String?
 
     private enum CodingKeys: String, CodingKey {
         case maskedText = "masked_text"
         case profanities
+        case error
     }
 }

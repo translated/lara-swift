@@ -8,10 +8,10 @@ public class TextResult: Codable {
     public let glossaries: [String]?
     public let adaptedToMatches: AdaptedToMatches?
     public let glossariesMatches: GlossariesMatches?
-    public let profanities: ProfanitiesValue?
+    public let profanities: ProfanitiesResult?
     public let styleguideResults: StyleguideResults?
-    
-    public init(contentType: String, sourceLanguage: String, translation: TranslatedValue, adaptedTo: [String], glossaries: [String]?, adaptedToMatches: AdaptedToMatches?, glossariesMatches: GlossariesMatches?, profanities: ProfanitiesValue? = nil, styleguideResults: StyleguideResults? = nil) {
+
+    public init(contentType: String, sourceLanguage: String, translation: TranslatedValue, adaptedTo: [String], glossaries: [String]?, adaptedToMatches: AdaptedToMatches?, glossariesMatches: GlossariesMatches?, profanities: ProfanitiesResult? = nil, styleguideResults: StyleguideResults? = nil) {
         self.contentType = contentType
         self.sourceLanguage = sourceLanguage
         self.translation = translation
@@ -32,7 +32,7 @@ public class TextResult: Codable {
         let glossaries = try container.decodeIfPresent([String].self, forKey: .glossaries)
         let adaptedToMatches = try container.decodeIfPresent(AdaptedToMatches.self, forKey: .adaptedToMatches)
         let glossariesMatches = try container.decodeIfPresent(GlossariesMatches.self, forKey: .glossariesMatches)
-        let profanities = try container.decodeIfPresent(ProfanitiesValue.self, forKey: .profanities)
+        let profanities = try container.decodeIfPresent(ProfanitiesResult.self, forKey: .profanities)
         let styleguideResults = try container.decodeIfPresent(StyleguideResults.self, forKey: .styleguideResults)
 
         self.init(contentType: contentType, sourceLanguage: sourceLanguage, translation: translation, adaptedTo: adaptedTo, glossaries: glossaries, adaptedToMatches: adaptedToMatches, glossariesMatches: glossariesMatches, profanities: profanities, styleguideResults: styleguideResults)

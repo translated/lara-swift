@@ -29,8 +29,10 @@ public class ProfanitiesValue: Codable {
             return
         }
 
-        self.single = nil
-        self.list = nil
+        throw DecodingError.dataCorruptedError(
+            in: container,
+            debugDescription: "ProfanitiesValue must decode as a ProfanityDetectResult object or an array of ProfanityDetectResult"
+        )
     }
 
     public func encode(to encoder: Encoder) throws {

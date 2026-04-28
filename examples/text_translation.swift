@@ -10,6 +10,7 @@ import Foundation
 // - TextBlocks translation (mixed translatable/non-translatable content)
 // - Auto-detect source language
 // - Advanced translation options
+// - Profanity detection and handling
 // - Translation with styleguides
 // - Get available languages
 // - Language Detection
@@ -102,30 +103,37 @@ func main() async {
             print("Italian (with all options): \(translations.first ?? "No translation")\n")
         }
 
-        // Example 7: Translation with profanity filter
-        print("=== Translation with Profanity Filter ===")
+        // Example 7: Translation with profanity detection and handling
+        print("=== Translation with Profanity Detection and Handling ===")
         let profanityText = "Don't be such a tool."
-        let detectOpts = TranslateOptions(profanityFilter: .detect)
-        let profResult = try await lara.translate(text: profanityText, source: "en-US", target: "it-IT", options: detectOpts)
+
+        // Detect profanities in both source and target, report without modifying the translation
+        let detectOpts = TranslateOptions(profanitiesDetect: .sourceTarget, profanitiesHandling: .detect)
+        let detectResult = try await lara.translate(text: profanityText, source: "en-US", target: "it-IT", options: detectOpts)
         print("Original: \(profanityText)")
-        if let t = try? profResult.translation.getTranslation() {
-            print("Detect mode: \(t)")
+        if let t = try? detectResult.translation.getTranslation() {
+            print("Detect mode translation: \(t)")
         }
-        if let profanities = profResult.profanities {
-            print("Masked text: \(profanities.maskedText)")
-            print("Profanities found: \(profanities.profanities.count)")
+        if let targetResult = detectResult.profanities?.target?.getSingle() {
+            print("Target masked text: \(targetResult.maskedText)")
+            print("Target profanities found: \(targetResult.profanities.count)")
         }
-
-        let hideOpts = TranslateOptions(profanityFilter: .hide)
-        let hideProfResult = try await lara.translate(text: profanityText, source: "en-US", target: "it-IT", options: hideOpts)
-        if let t = try? hideProfResult.translation.getTranslation() {
-            print("Hide mode: \(t)")
+        if let sourceResult = detectResult.profanities?.source?.getSingle() {
+            print("Source masked text: \(sourceResult.maskedText)")
         }
 
-        let avoidOpts = TranslateOptions(profanityFilter: .avoid)
-        let avoidProfResult = try await lara.translate(text: profanityText, source: "en-US", target: "it-IT", options: avoidOpts)
-        if let t = try? avoidProfResult.translation.getTranslation() {
-            print("Avoid mode: \(t)\n")
+        // Detect profanities in target only and hide them (replace them with asterisks)
+        let hideOpts = TranslateOptions(profanitiesDetect: .target, profanitiesHandling: .hide)
+        let hideResult = try await lara.translate(text: profanityText, source: "en-US", target: "it-IT", options: hideOpts)
+        if let t = try? hideResult.translation.getTranslation() {
+            print("Hide mode translation: \(t)")
+        }
+
+        // Detect profanities in target only, instruct Lara to avoid generating them
+        let avoidOpts = TranslateOptions(profanitiesDetect: .target, profanitiesHandling: .avoid)
+        let avoidResult = try await lara.translate(text: profanityText, source: "en-US", target: "it-IT", options: avoidOpts)
+        if let t = try? avoidResult.translation.getTranslation() {
+            print("Avoid mode translation: \(t)")
         }
 
         // Example 8: List available styleguides
@@ -222,7 +230,7 @@ func main() async {
         print("Text: Hola, ¿cómo estás?")
         print("Detected Language: \(detectResult2.language)")
 
-        // Example 11: Quality estimation for a single sentence pair
+        // Example 15: Quality estimation for a single sentence pair
         print("=== Quality Estimation: single sentence ===")
         let qeSingle = try await lara.qualityEstimation(
             source: "en-US",
@@ -232,7 +240,7 @@ func main() async {
         )
         print("Score: \(qeSingle.score)\n")
 
-        // Example 12: Quality estimation for a batch of sentence pairs
+        // Example 16: Quality estimation for a batch of sentence pairs
         print("=== Quality Estimation: batch ===")
         let qeBatch = try await lara.qualityEstimation(
             source: "en-US",

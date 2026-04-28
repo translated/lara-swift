@@ -17,7 +17,12 @@ public enum TranslationStyle: String, Codable {
     case creative
 }
 
-public enum ProfanityFilter: String {
+public enum ProfanitiesDetect: String {
+    case target
+    case sourceTarget = "source_target"
+}
+
+public enum ProfanitiesHandling: String {
     case detect
     case avoid
     case hide
@@ -52,7 +57,8 @@ public struct TranslateOptions {
     public var style: TranslationStyle?
     public var reasoning: Bool?
     public var metadata: TranslationMetadata?
-    public var profanityFilter: ProfanityFilter?
+    public var profanitiesDetect: ProfanitiesDetect?
+    public var profanitiesHandling: ProfanitiesHandling?
     public var styleguideId: String?
     public var styleguideReasoning: Bool?
     public var styleguideExplanationLanguage: String?
@@ -73,7 +79,8 @@ public struct TranslateOptions {
                 style: TranslationStyle? = nil,
                 reasoning: Bool? = nil,
                 metadata: TranslationMetadata? = nil,
-                profanityFilter: ProfanityFilter? = nil,
+                profanitiesDetect: ProfanitiesDetect? = nil,
+                profanitiesHandling: ProfanitiesHandling? = nil,
                 styleguideId: String? = nil,
                 styleguideReasoning: Bool? = nil,
                 styleguideExplanationLanguage: String? = nil) {
@@ -93,7 +100,8 @@ public struct TranslateOptions {
         self.style = style
         self.reasoning = reasoning
         self.metadata = metadata
-        self.profanityFilter = profanityFilter
+        self.profanitiesDetect = profanitiesDetect
+        self.profanitiesHandling = profanitiesHandling
         self.styleguideId = styleguideId
         self.styleguideReasoning = styleguideReasoning
         self.styleguideExplanationLanguage = styleguideExplanationLanguage
@@ -149,8 +157,11 @@ public struct TranslateOptions {
                 params["metadata"] = value
             }
         }
-        if let profanityFilter = self.profanityFilter {
-            params["profanity_filter"] = profanityFilter.rawValue
+        if let profanitiesDetect = self.profanitiesDetect {
+            params["profanities_detect"] = profanitiesDetect.rawValue
+        }
+        if let profanitiesHandling = self.profanitiesHandling {
+            params["profanities_handling"] = profanitiesHandling.rawValue
         }
         if let styleguideId = self.styleguideId {
             params["styleguide_id"] = styleguideId

@@ -16,6 +16,7 @@ All major translation features are accessible, making it easy to integrate and c
 - **Glossaries**: Enforce terminology standards across translations
 - **Styleguides**: Apply custom translation style rules with detailed change reasoning
 - **Language Detection**: Automatic source language identification
+- **Profanity Detection & Handling**: Detect profanities in source and/or target text, and hide or avoid them in translation
 - **Advanced Options**: Translation instructions and more
 
 ## 📚 Documentation
@@ -74,6 +75,7 @@ export LARA_ACCESS_KEY_SECRET="your-access-key-secret"
   - TextBlocks translation (mixed translatable/non-translatable content)
   - Auto-detect source language
   - Advanced translation options
+  - Profanity detection and handling
   - Translation with styleguides
   - Get available languages
   - Language Detection
@@ -543,10 +545,34 @@ let options = TranslateOptions(
     timeoutMs: 10000,                                     // Request timeout in milliseconds
     noTrace: false,                                       // Disable request tracing
     verbose: false,                                       // Enable verbose response
+    profanitiesDetect: .target,                           // Detect profanities in: .target or .sourceTarget
+    profanitiesHandling: .detect                          // How to handle profanities: .detect, .hide, or .avoid
     styleguideId: "stg_id",                               // Styleguide ID to apply
     styleguideReasoning: true,                            // Enable styleguide change reasoning
     styleguideExplanationLanguage: "en-US"                // Language for change explanations
 )
+```
+
+### 🚫 Profanity Detection and Handling
+
+Use `profanitiesDetect` and `profanitiesHandling` together to control how profanities are detected and handled.
+
+- `.target` — detect profanities in the translated text only
+- `.sourceTarget` — detect in both source and target text
+- `.detect` — report profanities without modifying the translation
+- `.hide` — replace detected profanities with asterisks (default when detect is set)
+- `.avoid` — instruct the model not to generate profanities
+
+```swift
+let options = TranslateOptions(
+    profanitiesDetect: .sourceTarget,
+    profanitiesHandling: .detect
+)
+let result = try await lara.translate(text: "Don't be such a tool.", source: "en-US", target: "it-IT", options: options)
+
+let profanities = result.profanities
+// profanities?.target — detection result for the translated text
+// profanities?.source — detection result for the source text (only with .sourceTarget)
 ```
 
 ### Language Codes
