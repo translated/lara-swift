@@ -120,7 +120,7 @@ public class Translator {
             }
         }
 
-        let response = try await laraClient.postStream(path: "/translate", params: params, headers: headers, callback: callback)
+        let response = try await laraClient.postStream(path: "/v2/translate", params: params, headers: headers, callback: callback)
         return try response.decoded(as: TextResult.self)
     }
 

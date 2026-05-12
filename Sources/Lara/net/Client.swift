@@ -146,7 +146,7 @@ public class Client {
         }
 
         if !(200..<300).contains(response.httpResponse.statusCode) {
-            let error: [String: Any] = (try? JSONSerialization.jsonObject(with: response.data, options: []) as? [String: Any])?["error"] as? [String: Any] ?? [:]
+            let error = (try? JSONSerialization.jsonObject(with: response.data, options: []) as? [String: Any]) ?? [:]
             throw LaraApiError(
                 statusCode: response.httpResponse.statusCode,
                 type: error["type"] as? String ?? "UnknownError",
@@ -415,7 +415,7 @@ public class Client {
             for try await byte in bytes {
                 errorData.append(byte)
             }
-            let error: [String: Any] = (try? JSONSerialization.jsonObject(with: errorData, options: []) as? [String: Any])?["error"] as? [String: Any] ?? [:]
+            let error = (try? JSONSerialization.jsonObject(with: errorData, options: []) as? [String: Any]) ?? [:]
             throw LaraApiError(
                 statusCode: httpResponse.statusCode,
                 type: error["type"] as? String ?? "UnknownError",
@@ -433,13 +433,8 @@ public class Client {
             if let data = trimmedLine.data(using: .utf8),
                let parsed = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
                 lastResult = parsed
-                let result = parsed["content"] ?? parsed
-                if let content = parsed["content"] {
-                    lastData = try? JSONSerialization.data(withJSONObject: content, options: [])
-                } else {
-                    lastData = data
-                }
-                callback?(result)
+                lastData = data
+                callback?(parsed)
             }
         }
 
