@@ -194,16 +194,29 @@ public class Memories {
         return try result.decoded(as: MemoryImport.self)
     }
 
-    public func importTmx(id: String, tmx: Data, gzip: Bool = false) async throws -> MemoryImport {
+    public func importTmx(id: String, tmx: Data, gzip: Bool = false, callbackUrl: String? = nil) async throws -> MemoryImport {
         var params: [String: Any] = [:]
         if gzip {
             params["compression"] = "gzip"
+        }
+        if let callbackUrl {
+            params["callback_url"] = callbackUrl
         }
 
         let files = ["tmx": tmx]
 
         let result = try await client.post(path: "/v2/memories/\(id)/import", params: params, files: files)
         return try result.decoded(as: MemoryImport.self)
+    }
+
+    public func exportAsync(id: String, callbackUrl: String, format: MemoryExportFormat? = nil) async throws -> MemoryExport {
+        var params: [String: Any] = ["callback_url": callbackUrl]
+        if let format {
+            params["format"] = format.rawValue
+        }
+
+        let result = try await client.get(path: "/v2/memories/\(id)/export/async", params: params)
+        return try result.decoded(as: MemoryExport.self)
     }
 
     public func getImportStatus(id: String) async throws -> MemoryImport {

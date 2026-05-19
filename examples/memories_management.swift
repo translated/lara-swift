@@ -10,6 +10,8 @@ import Foundation
 // - TMX file import with progress monitoring
 // - Translation deletion
 // - Translation with TUID and context
+// - Async TMX import with callback URL
+// - Async memory export with callback URL
 
 func main() async {
     // All examples can use environment variables for credentials:
@@ -129,6 +131,30 @@ func main() async {
             tuid: "greeting_001"  // Specify the TUID to delete a specific translation unit
         )
         print("🗑️  Deleted translation unit (Job ID: \(memoryImportDeletion.id))")
+        print()
+
+        // Example 6: Async TMX import with callback URL
+        print("=== Async TMX Import with Callback URL ===")
+        if FileManager.default.fileExists(atPath: tmxFilePath) {
+            let importCallbackUrl = "https://your-server.example.com/callbacks/memory-import"
+            let asyncImport = try await lara.memories.importTmx(
+                id: memoryId,
+                tmx: try Data(contentsOf: URL(fileURLWithPath: tmxFilePath)),
+                callbackUrl: importCallbackUrl
+            )
+            print("✅ Async import started (ID: \(asyncImport.id))")
+            print("   Callback will be sent to: \(importCallbackUrl)")
+            print()
+        } else {
+            print("TMX file not found, skipping async import example.\n")
+        }
+
+        // Example 7: Async memory export
+        print("=== Async Memory Export ===")
+        let exportCallbackUrl = "https://your-server.example.com/callbacks/memory-export"
+
+        let exportTmxJob = try await lara.memories.exportAsync(id: memoryId, callbackUrl: exportCallbackUrl, format: .tmx)
+        print("✅ TMX export triggered (job_id: \(exportTmxJob.jobId))")
         print()
 
         // Cleanup

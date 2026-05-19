@@ -126,6 +126,8 @@ swift run audio_translation.swift
   - TMX file import with progress monitoring
   - Translation deletion
   - Translation with TUID and context
+  - Async TMX import with callback URL
+  - Async memory export with callback URL
 
 ```bash
 cd examples
@@ -448,6 +450,21 @@ let deleteResult = try await lara.memories.deleteTranslation(
     sentence: "Hello",
     translation: "Bonjour",
     tuid: "greeting_001"
+)
+
+// TMX import with callback URL (async notification when import completes)
+let tmxData = try Data(contentsOf: URL(fileURLWithPath: "/path/to/memory.tmx"))
+let tmxImportWithCallback = try await lara.memories.importTmx(
+    id: "mem_1A2b3C4d5E6f7G8h9I0jKl",
+    tmx: tmxData,
+    callbackUrl: "https://your-service.example.com/memory-import-callback"
+)
+
+// Async memory export
+let exportResult = try await lara.memories.exportAsync(
+    id: "mem_1A2b3C4d5E6f7G8h9I0jKl",
+    format: "tmx",
+    callbackUrl: "https://your-service.example.com/memory-export-callback"
 )
 ```
 
