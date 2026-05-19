@@ -7,14 +7,16 @@ public class Styleguide: Codable {
     public let ownerId: String
     public let createdAt: Date
     public let updatedAt: Date
+    public let isPersonal: Bool?
 
-    init(id: String, name: String, content: String? = nil, ownerId: String, createdAt: Date, updatedAt: Date) {
+    init(id: String, name: String, content: String? = nil, ownerId: String, createdAt: Date, updatedAt: Date, isPersonal: Bool? = nil) {
         self.id = id
         self.name = name
         self.content = content
         self.ownerId = ownerId
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.isPersonal = isPersonal
     }
 
     public required convenience init(from decoder: Decoder) throws {
@@ -26,8 +28,9 @@ public class Styleguide: Codable {
         let ownerId = try container.decode(String.self, forKey: .ownerId)
         let createdAt = try container.decode(Date.self, forKey: .createdAt)
         let updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        let isPersonal = try container.decodeIfPresent(Bool.self, forKey: .isPersonal)
 
-        self.init(id: id, name: name, content: content, ownerId: ownerId, createdAt: createdAt, updatedAt: updatedAt)
+        self.init(id: id, name: name, content: content, ownerId: ownerId, createdAt: createdAt, updatedAt: updatedAt, isPersonal: isPersonal)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -39,6 +42,7 @@ public class Styleguide: Codable {
         try container.encode(ownerId, forKey: .ownerId)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
+        try container.encodeIfPresent(isPersonal, forKey: .isPersonal)
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -48,5 +52,6 @@ public class Styleguide: Codable {
         case ownerId = "owner_id"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case isPersonal = "is_personal"
     }
 }

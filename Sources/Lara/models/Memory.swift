@@ -10,8 +10,9 @@ public class Memory: Codable {
     public let secret: String
     public let ownerId: String
     public let collaboratorsCount: Int
+    public let isPersonal: Bool?
     
-    init(id: String, createdAt: Date, updatedAt: Date, sharedAt: Date, name: String, externalId: String?, secret: String, ownerId: String, collaboratorsCount: Int) {
+    init(id: String, createdAt: Date, updatedAt: Date, sharedAt: Date, name: String, externalId: String?, secret: String, ownerId: String, collaboratorsCount: Int, isPersonal: Bool? = nil) {
         self.id = id
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -21,6 +22,7 @@ public class Memory: Codable {
         self.secret = secret
         self.ownerId = ownerId
         self.collaboratorsCount = collaboratorsCount
+        self.isPersonal = isPersonal
     }
     
     public required convenience init(from decoder: Decoder) throws {
@@ -35,8 +37,9 @@ public class Memory: Codable {
         let secret = try container.decode(String.self, forKey: .secret)
         let ownerId = try container.decode(String.self, forKey: .ownerId)
         let collaboratorsCount = try container.decode(Int.self, forKey: .collaboratorsCount)
+        let isPersonal = try container.decodeIfPresent(Bool.self, forKey: .isPersonal)
         
-        self.init(id: id, createdAt: createdAt, updatedAt: updatedAt, sharedAt: sharedAt, name: name, externalId: externalId, secret: secret, ownerId: ownerId, collaboratorsCount: collaboratorsCount)
+        self.init(id: id, createdAt: createdAt, updatedAt: updatedAt, sharedAt: sharedAt, name: name, externalId: externalId, secret: secret, ownerId: ownerId, collaboratorsCount: collaboratorsCount, isPersonal: isPersonal)
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -51,6 +54,7 @@ public class Memory: Codable {
         try container.encode(secret, forKey: .secret)
         try container.encode(ownerId, forKey: .ownerId)
         try container.encode(collaboratorsCount, forKey: .collaboratorsCount)
+        try container.encodeIfPresent(isPersonal, forKey: .isPersonal)
     }
     
     private enum CodingKeys: String, CodingKey {
@@ -63,6 +67,7 @@ public class Memory: Codable {
         case secret
         case ownerId = "owner_id"
         case collaboratorsCount = "collaborators_count"
+        case isPersonal = "is_personal"
     }
     
 }
