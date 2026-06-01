@@ -20,4 +20,26 @@ public class Styleguides {
             return nil
         }
     }
+
+    public func create(name: String, content: String) async throws -> Styleguide {
+        let params: [String: Any] = [
+            "name": name,
+            "content": content
+        ]
+        let result = try await client.post(path: "/v2/styleguides", params: params)
+        return try result.decoded(as: Styleguide.self)
+    }
+
+    public func update(id: String, name: String? = nil, content: String? = nil) async throws -> Styleguide {
+        var params: [String: Any] = [:]
+        if let name { params["name"] = name }
+        if let content { params["content"] = content }
+        let result = try await client.put(path: "/v2/styleguides/\(id)", params: params)
+        return try result.decoded(as: Styleguide.self)
+    }
+
+    public func delete(id: String) async throws -> Styleguide {
+        let result = try await client.delete(path: "/v2/styleguides/\(id)")
+        return try result.decoded(as: Styleguide.self)
+    }
 }

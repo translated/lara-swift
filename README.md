@@ -505,7 +505,7 @@ let termCounts = try await lara.glossaries.counts(id: "gls_1A2b3C4d5E6f7G8h9I0jK
 
 ### 🎨 Styleguides
 
-Styleguides let you apply custom translation style rules. They can be listed and retrieved through the SDK.
+Styleguides let you apply custom translation style rules. They can be created, listed, retrieved, updated, and deleted through the SDK.
 
 ```swift
 // List all styleguides
@@ -513,6 +513,19 @@ let styleguides = try await lara.styleguides.list()
 
 // Get a specific styleguide by ID
 let styleguide = try await lara.styleguides.get(id: "stg_1A2b3C4d5E6f7G8h9I0jKl")
+
+// Create a styleguide
+let created = try await lara.styleguides.create(
+    name: "MyStyleguide",
+    content: "Use a formal tone. Prefer British English spelling."
+)
+
+// Update name and/or content (omit parameters you don't want to change)
+let updated = try await lara.styleguides.update(id: created.id, name: "RenamedStyleguide")
+let contentUpdated = try await lara.styleguides.update(id: created.id, content: "Use a casual tone.")
+
+// Delete a styleguide
+let deleted = try await lara.styleguides.delete(id: created.id)
 ```
 
 #### Translate with a styleguide
