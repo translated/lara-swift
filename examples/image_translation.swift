@@ -50,7 +50,7 @@ func main() async {
             file: file,
             source: sourceLang,
             target: targetLang,
-            options: ImageTranslationOptions(textRemoval: .overlay)
+            options: ImageTranslationOptions(model: .overlay)
         )
 
         // Save the translated image
@@ -70,7 +70,7 @@ func main() async {
             adaptTo: ["mem_1A2b3C4d5E6f7G8h9I0jKl"], // Replace with actual memory IDs
             glossaries: ["gls_1A2b3C4d5E6f7G8h9I0jKl"], // Replace with actual glossary IDs
             style: .faithful,
-            textRemoval: .inpainting
+            model: .inpainting
         )
 
         let translatedImageData2 = try await lara.images.translate(

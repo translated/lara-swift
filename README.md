@@ -315,7 +315,7 @@ let translatedImageData = try await lara.images.translate(
     file: file,
     source: "en",
     target: "fr",
-    options: ImageTranslationOptions(textRemoval: .overlay)
+    options: ImageTranslationOptions(model: .overlay)
 )
 
 // Extract and translate text from image
