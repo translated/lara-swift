@@ -139,7 +139,7 @@ swift run memories_management.swift
   - Create, list, update, delete glossaries
   - Individual term management (add/remove terms)
   - CSV import with status monitoring
-  - Glossary export
+  - Glossary export and async export
   - Glossary terms count
   - Import status checking
 
@@ -497,7 +497,15 @@ let importStatus = try await lara.glossaries.getImportStatus(id: "gls_1A2b3C4d5E
 let completedGlossaryImport = try await lara.glossaries.waitForImport(glossaryImport, maxWaitTime: 300)  // 5 minutes
 
 // Export glossary
-let csvExport = try await lara.glossaries.export(id: "gls_1A2b3C4d5E6f7G8h9I0jKl", source: "en")
+let csvExport = try await lara.glossaries.export(id: "gls_1A2b3C4d5E6f7G8h9I0jKl", contentType: .csvTableUni, source: "en")
+
+// Async glossary export — returns a jobId; the result is delivered to your callback URL when ready
+let exportJob = try await lara.glossaries.exportAsync(
+    id: "gls_1A2b3C4d5E6f7G8h9I0jKl",
+    callbackUrl: "https://your-server.example.com/lara/export-callback",
+    contentType: .csvTableUni,
+    source: "en-US"
+)
 
 // Get glossary terms count
 let termCounts = try await lara.glossaries.counts(id: "gls_1A2b3C4d5E6f7G8h9I0jKl")

@@ -44,18 +44,21 @@ public class Glossaries {
         return try result.decoded(as: Glossary.self)
     }
 
-    public func importCsv(id: String, csv: Data, gzip: Bool = false) async throws -> GlossaryImport {
-        return try await importCsv(id: id, csv: csv, contentType: .csvTableUni, gzip: gzip)
+    public func importCsv(id: String, csv: Data, gzip: Bool = false, callbackUrl: String? = nil) async throws -> GlossaryImport {
+        return try await importCsv(id: id, csv: csv, contentType: .csvTableUni, gzip: gzip, callbackUrl: callbackUrl)
     }
 
-    public func importCsv(id: String, csv: Data, contentType: GlossaryFileFormat) async throws -> GlossaryImport {
-        return try await importCsv(id: id, csv: csv, contentType: contentType, gzip: false)
+    public func importCsv(id: String, csv: Data, contentType: GlossaryFileFormat, callbackUrl: String? = nil) async throws -> GlossaryImport {
+        return try await importCsv(id: id, csv: csv, contentType: contentType, gzip: false, callbackUrl: callbackUrl)
     }
 
-    public func importCsv(id: String, csv: Data, contentType: GlossaryFileFormat, gzip: Bool) async throws -> GlossaryImport {
+    public func importCsv(id: String, csv: Data, contentType: GlossaryFileFormat, gzip: Bool, callbackUrl: String? = nil) async throws -> GlossaryImport {
         var params: [String: Any] = ["content_type": contentType.rawValue]
         if gzip {
             params["compression"] = "gzip"
+        }
+        if let callbackUrl {
+            params["callback_url"] = callbackUrl
         }
 
         let files = ["csv": csv]
@@ -132,6 +135,19 @@ public class Glossaries {
             throw LaraApiConnectionError("Failed to decode export data")
         }
         return csvString
+    }
+
+    public func exportAsync(id: String, callbackUrl: String, contentType: GlossaryFileFormat, source: String? = nil) async throws -> GlossaryExport {
+        var params: [String: Any] = [
+            "callback_url": callbackUrl,
+            "content_type": contentType.rawValue
+        ]
+        if let source {
+            params["source"] = source
+        }
+
+        let result = try await client.get(path: "/v2/glossaries/\(id)/export/async", params: params)
+        return try result.decoded(as: GlossaryExport.self)
     }
 
     /// Adds or replaces terms in a glossary

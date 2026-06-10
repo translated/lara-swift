@@ -7,7 +7,7 @@ import Foundation
 // - Create, list, update, delete glossaries
 // - Individual term management (add/remove terms)
 // - CSV import with status monitoring
-// - Glossary export
+// - Glossary export and async export
 // - Glossary terms count
 // - Import status checking
 
@@ -105,21 +105,58 @@ func main() async {
         }
         print()
 
-        // Example 5: Export functionality
+        // Example 5: CSV import with a callback URL (async notification when import completes)
+        print("=== CSV Import with Callback URL ===")
+        if FileManager.default.fileExists(atPath: csvFilePath) {
+            let callbackUrl = "https://your-server.example.com/lara/import-callback" // Replace with your endpoint
+            let csvData = try Data(contentsOf: URL(fileURLWithPath: csvFilePath))
+            let importWithCallback = try await lara.glossaries.importCsv(
+                id: glossaryId,
+                csv: csvData,
+                gzip: false,
+                callbackUrl: callbackUrl
+            )
+            print("Import started with ID: \(importWithCallback.id) (callback: \(callbackUrl))")
+
+            // You can also combine content type, gzip, and callbackUrl:
+            // let importWithCallback = try await lara.glossaries.importCsv(
+            //     id: glossaryId,
+            //     csv: csvData,
+            //     contentType: .csvTableUni,
+            //     gzip: true,
+            //     callbackUrl: callbackUrl
+            // )
+            print()
+        } else {
+            print("CSV file not found: \(csvFilePath)\n")
+        }
+
+        // Example 6: Export functionality
         print("=== Export Functionality ===")
 
         // Export as CSV table unidirectional format
         print("📤 Exporting as CSV table unidirectional...")
-        let csvString = try await lara.glossaries.export(id: glossaryId, contentType: "csv/table-uni", source: "en-US")
+        let csvString = try await lara.glossaries.export(id: glossaryId, contentType: .csvTableUni, source: "en-US")
         print("✅ CSV unidirectional export successful (\(csvString.count) bytes)")
 
         // Save sample export to file - replace with your desired output path
         let exportFilePath = "exported_glossary.csv"  // Replace with actual path
         try csvString.write(to: URL(fileURLWithPath: exportFilePath), atomically: true, encoding: .utf8)
         print("💾 Sample export saved to: \(FileManager.default.displayName(atPath: exportFilePath))")
+
+        // Async export - returns a jobId; the result is delivered to your callback URL when ready
+        print("📤 Starting async export...")
+        let exportJob = try await lara.glossaries.exportAsync(
+            id: glossaryId,
+            callbackUrl: "https://your-server.example.com/lara/export-callback",  // Replace with your actual callback URL
+            contentType: .csvTableUni,
+            source: "en-US"
+        )
+        print("✅ Async export started (job ID: \(exportJob.jobId))")
+        print("   The export result will be delivered to your callback URL when ready.")
         print()
 
-        // Example 6: Glossary Terms Count
+        // Example 7: Glossary Terms Count
         print("=== Glossary Terms Count ===")
         let finalCounts = try await lara.glossaries.counts(id: glossaryId)
         print("📊 Detailed glossary terms count:")
