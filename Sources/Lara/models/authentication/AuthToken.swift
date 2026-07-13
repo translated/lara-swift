@@ -11,8 +11,17 @@ public class AuthToken {
         self.expiresAtMs = AuthToken.parseExpiresAtMs(token)
     }
 
+    public var hasRefreshToken: Bool {
+        !refreshToken.isEmpty
+    }
+
     public func isTokenExpired() -> Bool {
         return expiresAtMs <= Int64(Date().timeIntervalSince1970 * 1000) + 5000
+    }
+
+    static func normalizeRefreshToken(_ value: String?) -> String? {
+        guard let value, !value.isEmpty else { return nil }
+        return value
     }
 
     private static func parseExpiresAtMs(_ token: String) -> Int64 {

@@ -34,7 +34,7 @@ public class Client {
         self.connectionTimeout = options.connectionTimeout
         self.readTimeout = options.readTimeout
         self.token = authToken.token
-        self.refreshToken = authToken.refreshToken
+        self.refreshToken = authToken.hasRefreshToken ? authToken.refreshToken : nil
         self.tokenExpiresAtMs = Client.parseJwtExpiresAtMs(authToken.token)
     }
 
@@ -222,7 +222,7 @@ public class Client {
     }
 
     private func refreshOrReauthenticate() async throws {
-        if let rt = refreshToken, !rt.isEmpty {
+        if refreshToken != nil {
             do {
                 try await refresh()
                 return
@@ -311,19 +311,21 @@ public class Client {
         }
 
         self.token = authToken
-        self.refreshToken = response.httpResponse.value(forHTTPHeaderField: "X-Lara-Refresh-Token")
+        self.refreshToken = AuthToken.normalizeRefreshToken(
+            response.httpResponse.value(forHTTPHeaderField: "X-Lara-Refresh-Token")
+        )
         self.tokenExpiresAtMs = Client.parseJwtExpiresAtMs(authToken)
     }
 
     private func refresh() async throws {
-        guard let refreshToken = refreshToken else {
+        guard let currentRefreshToken = refreshToken else {
             throw LaraApiError(statusCode: 401, type: "AuthenticationError", message: "No refresh token available")
         }
 
         let response: ClientResponse = try await makeAuthRequest(
             method: "POST",
             path: "/v2/auth/refresh",
-            headers: ["Authorization": "Bearer \(refreshToken)"]
+            headers: ["Authorization": "Bearer \(currentRefreshToken)"]
         )
 
         let refreshData = try response.decoder.decode([String: String].self, from: response.data)
@@ -335,7 +337,9 @@ public class Client {
         }
 
         self.token = refreshAuthToken
-        self.refreshToken = response.httpResponse.value(forHTTPHeaderField: "X-Lara-Refresh-Token")
+        self.refreshToken = AuthToken.normalizeRefreshToken(
+            response.httpResponse.value(forHTTPHeaderField: "X-Lara-Refresh-Token")
+        )
         self.tokenExpiresAtMs = Client.parseJwtExpiresAtMs(refreshAuthToken)
     }
 
