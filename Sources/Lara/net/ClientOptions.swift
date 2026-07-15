@@ -7,6 +7,7 @@ public struct ClientOptions {
     private let serverUrlString: String
     public let connectionTimeout: TimeInterval
     public let readTimeout: TimeInterval
+    public let sessionId: String?
 
     public var serverUrl: URL {
         if let url = URL(string: serverUrlString) {
@@ -18,7 +19,7 @@ public struct ClientOptions {
         return defaultUrl
     }
 
-    public init(serverUrl: URL? = nil, connectionTimeout: TimeInterval = 30, readTimeout: TimeInterval = 30) {
+    public init(serverUrl: URL? = nil, connectionTimeout: TimeInterval = 30, readTimeout: TimeInterval = 30, sessionId: String? = nil) {
         if let url = serverUrl {
             self.serverUrlString = url.absoluteString
         } else {
@@ -27,5 +28,6 @@ public struct ClientOptions {
 
         self.connectionTimeout = connectionTimeout
         self.readTimeout = readTimeout
+        self.sessionId = sessionId
     }
 }

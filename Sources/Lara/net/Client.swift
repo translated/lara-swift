@@ -14,6 +14,7 @@ public class Client {
 
     public let connectionTimeout: TimeInterval
     public let readTimeout: TimeInterval
+    private let sessionId: String?
     internal var extraHeaders: [String: String] = [:]
 
     private let jsonDecoder: JSONDecoder = APIJSONDecoder.decoder()
@@ -25,6 +26,7 @@ public class Client {
         self.baseUrl = options.serverUrl
         self.connectionTimeout = options.connectionTimeout
         self.readTimeout = options.readTimeout
+        self.sessionId = options.sessionId
     }
 
     public init(authToken: AuthToken, options: ClientOptions = ClientOptions()) {
@@ -33,6 +35,7 @@ public class Client {
         self.baseUrl = options.serverUrl
         self.connectionTimeout = options.connectionTimeout
         self.readTimeout = options.readTimeout
+        self.sessionId = options.sessionId
         self.token = authToken.token
         self.refreshToken = authToken.hasRefreshToken ? authToken.refreshToken : nil
         self.tokenExpiresAtMs = Client.parseJwtExpiresAtMs(authToken.token)
@@ -284,6 +287,10 @@ public class Client {
 
         if let version = Version.get() {
             headers["X-Lara-SDK-Version"] = version
+        }
+
+        if let sessionId = sessionId, !sessionId.isEmpty {
+            headers["X-Lara-Auth-Session-Id"] = sessionId
         }
 
         let signature = generateSignature(
