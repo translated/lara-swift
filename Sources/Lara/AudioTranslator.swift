@@ -50,8 +50,11 @@ public class AudioTranslator {
         }
 
         // Step 3: Create audio record
+        guard let s3Key = uploadParams.fields["key"], !s3Key.isEmpty else {
+            throw LaraValidationError("Upload URL response is missing a valid S3 key")
+        }
         return try await createAudio(
-            s3Key: uploadParams.fields["key"] ?? "",
+            s3Key: s3Key,
             filename: filename,
             source: source,
             target: target,
@@ -138,6 +141,84 @@ public class AudioTranslator {
         return try await download(id: audio.id)
     }
 
+    // MARK: - Transcript Methods
+
+    /// Upload an audio file for transcript translation
+    /// Uses /translate-transcript endpoint (no voice synthesis)
+    /// - Parameters:
+    ///   - data: The audio data to upload
+    ///   - filename: Name of the audio file
+    ///   - source: Source language (optional, auto-detected if nil)
+    ///   - target: Target language for translation
+    ///   - options: Upload options (optional, no voiceGender)
+    /// - Returns: audio information
+    public func uploadForTranscription(
+        data: Data,
+        filename: String,
+        source: String? = nil,
+        target: String,
+        options: AudioTranscriptUploadOptions? = nil
+    ) async throws -> Audio {
+        let uploadUrlParams: [String: Any] = ["filename": filename]
+
+        let response = try await client.get(path: "/v2/audio/upload-url", params: uploadUrlParams)
+        let uploadParams = try response.decoded(as: S3UploadParams.self)
+
+        try await withCheckedThrowingContinuation { continuation in
+            self.s3Client.upload(url: uploadParams.url, fields: uploadParams.fields, data: data) { s3Result in
+                switch s3Result {
+                case .success:
+                    continuation.resume(returning: ())
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+
+        guard let s3Key = uploadParams.fields["key"], !s3Key.isEmpty else {
+            throw LaraValidationError("Upload URL response is missing a valid S3 key")
+        }
+        return try await createTranscriptAudio(
+            s3Key: s3Key,
+            filename: filename,
+            source: source,
+            target: target,
+            options: options
+        )
+    }
+
+    /// Retrieve the translated transcript JSON
+    /// - Parameters:
+    ///   - id: Audio ID
+    /// - Returns: transcript result with text and segments
+    public func getTranslatedTranscript(id: String) async throws -> AudioTextResult {
+        let result = try await client.get(path: "/v2/audio/\(id)/translated-transcript")
+        return try result.decoded(as: AudioTextResult.self)
+    }
+
+    /// Upload and translate an audio transcript in one operation
+    /// Internally composes: uploadForTranscription -> waitForCompletion -> getTranslatedTranscript
+    /// - Parameters:
+    ///   - data: The audio data to upload
+    ///   - filename: Name of the audio file
+    ///   - source: Source language (optional, auto-detected if nil)
+    ///   - target: Target language for translation
+    ///   - options: Upload options (optional, no voiceGender)
+    /// - Returns: transcript result with text and segments
+    public func translateTranscript(
+        data: Data,
+        filename: String,
+        source: String? = nil,
+        target: String,
+        options: AudioTranscriptUploadOptions? = nil
+    ) async throws -> AudioTextResult {
+        let audio = try await uploadForTranscription(data: data, filename: filename, source: source, target: target, options: options)
+
+        _ = try await waitForCompletion(id: audio.id)
+
+        return try await getTranslatedTranscript(id: audio.id)
+    }
+
     // MARK: - Private Helper Methods
 
     private func createAudio(
@@ -166,6 +247,35 @@ public class AudioTranslator {
         }
 
         let result = try await client.post(path: "/v2/audio/translate", params: params, headers: headers)
+        return try result.decoded(as: Audio.self)
+    }
+
+    private func createTranscriptAudio(
+        s3Key: String,
+        filename: String,
+        source: String?,
+        target: String,
+        options: AudioTranscriptUploadOptions?
+    ) async throws -> Audio {
+        var params: [String: Any] = [
+            "target": target,
+            "s3key": s3Key
+        ]
+
+        if let source = source {
+            params["source"] = source
+        }
+
+        if let options = options {
+            params.merge(options.toParams()) { (_, new) in new }
+        }
+
+        var headers: [String: String] = [:]
+        if let noTrace = options?.noTrace, noTrace == true {
+            headers["X-No-Trace"] = "true"
+        }
+
+        let result = try await client.post(path: "/v2/audio/translate-transcript", params: params, headers: headers)
         return try result.decoded(as: Audio.self)
     }
 }
