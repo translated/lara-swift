@@ -25,13 +25,16 @@ public struct AudioOptions: Codable {
 
     public var style: TranslationStyle?
 
+    public var voiceCloning: Bool?
+
     public var voiceGender: VoiceGender?
 
-    public init(adaptTo: [String]? = nil, glossaries: [String]? = nil, noTrace: Bool? = nil, style: TranslationStyle? = nil, voiceGender: VoiceGender? = nil) {
+    public init(adaptTo: [String]? = nil, glossaries: [String]? = nil, noTrace: Bool? = nil, style: TranslationStyle? = nil, voiceCloning: Bool? = nil, voiceGender: VoiceGender? = nil) {
         self.adaptTo = adaptTo
         self.glossaries = glossaries
         self.noTrace = noTrace
         self.style = style
+        self.voiceCloning = voiceCloning
         self.voiceGender = voiceGender
     }
 
@@ -40,6 +43,7 @@ public struct AudioOptions: Codable {
         case glossaries
         case noTrace = "no_trace"
         case style
+        case voiceCloning = "voice_cloning"
         case voiceGender = "voice_gender"
     }
 }
@@ -54,13 +58,16 @@ public struct AudioUploadOptions {
 
     public var style: TranslationStyle?
 
+    public var voiceCloning: Bool?
+
     public var voiceGender: VoiceGender?
 
-    public init(adaptTo: [String]? = nil, glossaries: [String]? = nil, noTrace: Bool? = nil, style: TranslationStyle? = nil, voiceGender: VoiceGender? = nil) {
+    public init(adaptTo: [String]? = nil, glossaries: [String]? = nil, noTrace: Bool? = nil, style: TranslationStyle? = nil, voiceCloning: Bool? = nil, voiceGender: VoiceGender? = nil) {
         self.adaptTo = adaptTo
         self.glossaries = glossaries
         self.noTrace = noTrace
         self.style = style
+        self.voiceCloning = voiceCloning
         self.voiceGender = voiceGender
     }
 
@@ -77,6 +84,10 @@ public struct AudioUploadOptions {
 
         if let style = style {
             params["style"] = style.rawValue
+        }
+
+        if let voiceCloning = voiceCloning {
+            params["voice_cloning"] = voiceCloning
         }
 
         if let voiceGender = voiceGender {
