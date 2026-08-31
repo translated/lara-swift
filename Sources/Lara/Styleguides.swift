@@ -42,4 +42,39 @@ public class Styleguides {
         let result = try await client.delete(path: "/v2/styleguides/\(id)")
         return try result.decoded(as: Styleguide.self)
     }
+
+    public func getShares(id: String) async throws -> StyleguideShares {
+        let result = try await client.get(path: "/v2/styleguides/\(id)/shares")
+        return try result.decoded(as: StyleguideShares.self)
+    }
+
+    public func addAccountShare(id: String, name: String? = nil) async throws -> Styleguide {
+        let result = try await client.post(path: "/v2/styleguides/\(id)/shares", params: ShareParameters.make(name: name))
+        return try result.decoded(as: Styleguide.self)
+    }
+
+    public func renameAccountShare(id: String, name: String) async throws -> Styleguide {
+        let result = try await client.put(path: "/v2/styleguides/\(id)/shares", params: ShareParameters.make(name: name))
+        return try result.decoded(as: Styleguide.self)
+    }
+
+    public func revokeAccountShare(id: String) async throws -> Styleguide {
+        let result = try await client.delete(path: "/v2/styleguides/\(id)/shares")
+        return try result.decoded(as: Styleguide.self)
+    }
+
+    public func addGroupShare(id: String, groupId: String, name: String? = nil) async throws -> Styleguide {
+        let result = try await client.post(path: "/v2/styleguides/\(id)/shares/groups/\(groupId)", params: ShareParameters.make(name: name))
+        return try result.decoded(as: Styleguide.self)
+    }
+
+    public func renameGroupShare(id: String, groupId: String, name: String) async throws -> Styleguide {
+        let result = try await client.put(path: "/v2/styleguides/\(id)/shares/groups/\(groupId)", params: ShareParameters.make(name: name))
+        return try result.decoded(as: Styleguide.self)
+    }
+
+    public func revokeGroupShare(id: String, groupId: String) async throws -> Styleguide {
+        let result = try await client.delete(path: "/v2/styleguides/\(id)/shares/groups/\(groupId)")
+        return try result.decoded(as: Styleguide.self)
+    }
 }

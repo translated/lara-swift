@@ -5,6 +5,7 @@ import Foundation
 //
 // This example demonstrates:
 // - Create, list, get, update, delete styleguides
+// - Sharing a styleguide with the account or a group (add, rename, list, revoke)
 
 func main() async {
     // All examples can use environment variables for credentials:
@@ -36,7 +37,7 @@ func main() async {
         print("=== Styleguide Operations ===")
         if let retrieved = try await lara.styleguides.get(id: styleguide.id) {
             print("📖 Styleguide: \(retrieved.name) (Owner: \(retrieved.ownerId))")
-            print("   Personal: \(retrieved.isPersonal ?? false)")
+            print("   Personal: \(retrieved.isPersonal)")
             print("   Created at: \(retrieved.createdAt)")
             if let content = retrieved.content {
                 let preview = String(content.prefix(80))
@@ -71,6 +72,54 @@ func main() async {
             print("ℹ️  Styleguide not found (returned nil as expected)")
         }
         print()
+
+        // Example 5: Styleguide sharing
+        // Sharing requires a multi-user account and the appropriate role (account owner for
+        // account-wide shares, owner/admin for group shares). Each call returns the shared
+        // styleguide, whose `name` reflects the shared copy's name and `sharedAt` the share time.
+        print("=== Styleguide Sharing ===")
+        do {
+            // Share with the whole account/team (the optional name: names the shared copy)
+            let teamShare = try await lara.styleguides.addAccountShare(id: styleguide.id, name: "Shared with the team")
+            print("🤝 Shared with the account as: '\(teamShare.name)' (shared at \(teamShare.sharedAt))")
+
+            // Rename the account/team share
+            let renamedTeamShare = try await lara.styleguides.renameAccountShare(id: styleguide.id, name: "Team styleguide")
+            print("📝 Renamed account share to: '\(renamedTeamShare.name)'")
+
+            // List every share visible to the caller: the account share, group shares and user shares
+            let shares = try await lara.styleguides.getShares(id: styleguide.id)
+            if let account = shares.account {
+                print("👥 Account share '\(account.shareName)' (\(account.permissions.rawValue))")
+            }
+            for group in shares.groups {
+                print("👥 Group \(group.name): '\(group.shareName)' (\(group.permissions.rawValue))")
+            }
+            for user in shares.users {
+                print("👤 User \(user.name): '\(user.shareName)' (\(user.permissions.rawValue))")
+            }
+
+            // Revoke the account/team share
+            _ = try await lara.styleguides.revokeAccountShare(id: styleguide.id)
+            print("🚫 Revoked the account share")
+
+            // Group shares work the same way, addressed by a group ID (grp_...)
+            if let groupId = ProcessInfo.processInfo.environment["LARA_GROUP_ID"] {
+                let groupShare = try await lara.styleguides.addGroupShare(id: styleguide.id, groupId: groupId, name: "Shared with the group")
+                print("🤝 Shared with group \(groupId) as: '\(groupShare.name)'")
+
+                _ = try await lara.styleguides.renameGroupShare(id: styleguide.id, groupId: groupId, name: "Marketing group")
+                print("📝 Renamed the group share")
+
+                _ = try await lara.styleguides.revokeGroupShare(id: styleguide.id, groupId: groupId)
+                print("🚫 Revoked the group share")
+            } else {
+                print("Set LARA_GROUP_ID to try the group sharing methods.")
+            }
+            print()
+        } catch {
+            print("Error sharing styleguide: \(error)")
+        }
 
     } catch {
         print("Error during styleguide management: \(error)")

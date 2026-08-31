@@ -7,15 +7,17 @@ public class Styleguide: Codable {
     public let ownerId: String
     public let createdAt: Date
     public let updatedAt: Date
-    public let isPersonal: Bool?
+    public let sharedAt: Date
+    public let isPersonal: Bool
 
-    init(id: String, name: String, content: String? = nil, ownerId: String, createdAt: Date, updatedAt: Date, isPersonal: Bool? = nil) {
+    init(id: String, name: String, content: String? = nil, ownerId: String, createdAt: Date, updatedAt: Date, sharedAt: Date, isPersonal: Bool = false) {
         self.id = id
         self.name = name
         self.content = content
         self.ownerId = ownerId
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.sharedAt = sharedAt
         self.isPersonal = isPersonal
     }
 
@@ -28,9 +30,12 @@ public class Styleguide: Codable {
         let ownerId = try container.decode(String.self, forKey: .ownerId)
         let createdAt = try container.decode(Date.self, forKey: .createdAt)
         let updatedAt = try container.decode(Date.self, forKey: .updatedAt)
-        let isPersonal = try container.decodeIfPresent(Bool.self, forKey: .isPersonal)
+        let sharedAt = try container.decode(Date.self, forKey: .sharedAt)
+        // The API sends is_personal: true and omits the key otherwise; it never sends false or null,
+        // so an absent field means "not personal".
+        let isPersonal = try container.decodeIfPresent(Bool.self, forKey: .isPersonal) ?? false
 
-        self.init(id: id, name: name, content: content, ownerId: ownerId, createdAt: createdAt, updatedAt: updatedAt, isPersonal: isPersonal)
+        self.init(id: id, name: name, content: content, ownerId: ownerId, createdAt: createdAt, updatedAt: updatedAt, sharedAt: sharedAt, isPersonal: isPersonal)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -42,7 +47,8 @@ public class Styleguide: Codable {
         try container.encode(ownerId, forKey: .ownerId)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
-        try container.encodeIfPresent(isPersonal, forKey: .isPersonal)
+        try container.encode(sharedAt, forKey: .sharedAt)
+        try container.encode(isPersonal, forKey: .isPersonal)
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -52,6 +58,7 @@ public class Styleguide: Codable {
         case ownerId = "owner_id"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case sharedAt = "shared_at"
         case isPersonal = "is_personal"
     }
 }

@@ -44,6 +44,41 @@ public class Glossaries {
         return try result.decoded(as: Glossary.self)
     }
 
+    public func getShares(id: String) async throws -> GlossaryShares {
+        let result = try await client.get(path: "/v2/glossaries/\(id)/shares")
+        return try result.decoded(as: GlossaryShares.self)
+    }
+
+    public func addAccountShare(id: String, name: String? = nil) async throws -> Glossary {
+        let result = try await client.post(path: "/v2/glossaries/\(id)/shares", params: ShareParameters.make(name: name))
+        return try result.decoded(as: Glossary.self)
+    }
+
+    public func renameAccountShare(id: String, name: String) async throws -> Glossary {
+        let result = try await client.put(path: "/v2/glossaries/\(id)/shares", params: ShareParameters.make(name: name))
+        return try result.decoded(as: Glossary.self)
+    }
+
+    public func revokeAccountShare(id: String) async throws -> Glossary {
+        let result = try await client.delete(path: "/v2/glossaries/\(id)/shares")
+        return try result.decoded(as: Glossary.self)
+    }
+
+    public func addGroupShare(id: String, groupId: String, name: String? = nil) async throws -> Glossary {
+        let result = try await client.post(path: "/v2/glossaries/\(id)/shares/groups/\(groupId)", params: ShareParameters.make(name: name))
+        return try result.decoded(as: Glossary.self)
+    }
+
+    public func renameGroupShare(id: String, groupId: String, name: String) async throws -> Glossary {
+        let result = try await client.put(path: "/v2/glossaries/\(id)/shares/groups/\(groupId)", params: ShareParameters.make(name: name))
+        return try result.decoded(as: Glossary.self)
+    }
+
+    public func revokeGroupShare(id: String, groupId: String) async throws -> Glossary {
+        let result = try await client.delete(path: "/v2/glossaries/\(id)/shares/groups/\(groupId)")
+        return try result.decoded(as: Glossary.self)
+    }
+
     public func importCsv(id: String, csv: Data, gzip: Bool = false, callbackUrl: String? = nil) async throws -> GlossaryImport {
         return try await importCsv(id: id, csv: csv, contentType: .csvTableUni, gzip: gzip, callbackUrl: callbackUrl)
     }

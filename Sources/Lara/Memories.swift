@@ -64,6 +64,41 @@ public class Memories {
         return try response.decoded(as: [Memory].self)
     }
 
+    public func getShares(id: String) async throws -> MemoryShares {
+        let result = try await client.get(path: "/v2/memories/\(id)/shares")
+        return try result.decoded(as: MemoryShares.self)
+    }
+
+    public func addAccountShare(id: String, name: String? = nil) async throws -> Memory {
+        let result = try await client.post(path: "/v2/memories/\(id)/shares", params: ShareParameters.make(name: name))
+        return try result.decoded(as: Memory.self)
+    }
+
+    public func renameAccountShare(id: String, name: String) async throws -> Memory {
+        let result = try await client.put(path: "/v2/memories/\(id)/shares", params: ShareParameters.make(name: name))
+        return try result.decoded(as: Memory.self)
+    }
+
+    public func revokeAccountShare(id: String) async throws -> Memory {
+        let result = try await client.delete(path: "/v2/memories/\(id)/shares")
+        return try result.decoded(as: Memory.self)
+    }
+
+    public func addGroupShare(id: String, groupId: String, name: String? = nil) async throws -> Memory {
+        let result = try await client.post(path: "/v2/memories/\(id)/shares/groups/\(groupId)", params: ShareParameters.make(name: name))
+        return try result.decoded(as: Memory.self)
+    }
+
+    public func renameGroupShare(id: String, groupId: String, name: String) async throws -> Memory {
+        let result = try await client.put(path: "/v2/memories/\(id)/shares/groups/\(groupId)", params: ShareParameters.make(name: name))
+        return try result.decoded(as: Memory.self)
+    }
+
+    public func revokeGroupShare(id: String, groupId: String) async throws -> Memory {
+        let result = try await client.delete(path: "/v2/memories/\(id)/shares/groups/\(groupId)")
+        return try result.decoded(as: Memory.self)
+    }
+
     // MARK: - Translation Management
 
     public func addTranslation(

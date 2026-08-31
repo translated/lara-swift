@@ -466,6 +466,14 @@ let exportResult = try await lara.memories.exportAsync(
     format: "tmx",
     callbackUrl: "https://your-service.example.com/memory-export-callback"
 )
+
+// Share with the account or a group; shares can be renamed, listed, and revoked
+_ = try await lara.memories.addAccountShare(id: memory.id, name: "Team memory")
+_ = try await lara.memories.renameAccountShare(id: memory.id, name: "Company memory")
+_ = try await lara.memories.addGroupShare(id: memory.id, groupId: "grp_1A2b3C4d5E6f7G8h9I0jKl", name: "Marketing memory")
+let shares = try await lara.memories.getShares(id: memory.id)
+_ = try await lara.memories.revokeGroupShare(id: memory.id, groupId: "grp_1A2b3C4d5E6f7G8h9I0jKl")
+_ = try await lara.memories.revokeAccountShare(id: memory.id)
 ```
 
 ### 📚 Glossary Management
@@ -509,6 +517,11 @@ let exportJob = try await lara.glossaries.exportAsync(
 
 // Get glossary terms count
 let termCounts = try await lara.glossaries.counts(id: "gls_1A2b3C4d5E6f7G8h9I0jKl")
+
+// Glossaries support the same account and group sharing workflow
+_ = try await lara.glossaries.addAccountShare(id: glossary.id, name: "Team glossary")
+let glossaryShares = try await lara.glossaries.getShares(id: glossary.id)
+_ = try await lara.glossaries.revokeAccountShare(id: glossary.id)
 ```
 
 ### 🎨 Styleguides
@@ -531,6 +544,10 @@ let created = try await lara.styleguides.create(
 // Update name and/or content (omit parameters you don't want to change)
 let updated = try await lara.styleguides.update(id: created.id, name: "RenamedStyleguide")
 let contentUpdated = try await lara.styleguides.update(id: created.id, content: "Use a casual tone.")
+
+// Share a styleguide and inspect visible account, group, and user shares
+_ = try await lara.styleguides.addGroupShare(id: created.id, groupId: "grp_1A2b3C4d5E6f7G8h9I0jKl", name: "Marketing styleguide")
+let styleguideShares = try await lara.styleguides.getShares(id: created.id)
 
 // Delete a styleguide
 let deleted = try await lara.styleguides.delete(id: created.id)

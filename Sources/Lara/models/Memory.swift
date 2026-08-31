@@ -7,12 +7,12 @@ public class Memory: Codable {
     public let sharedAt: Date
     public let name: String
     public let externalId: String?
-    public let secret: String
+    public let secret: String?
     public let ownerId: String
     public let collaboratorsCount: Int
-    public let isPersonal: Bool?
-    
-    init(id: String, createdAt: Date, updatedAt: Date, sharedAt: Date, name: String, externalId: String?, secret: String, ownerId: String, collaboratorsCount: Int, isPersonal: Bool? = nil) {
+    public let isPersonal: Bool
+
+    init(id: String, createdAt: Date, updatedAt: Date, sharedAt: Date, name: String, externalId: String?, secret: String?, ownerId: String, collaboratorsCount: Int, isPersonal: Bool = false) {
         self.id = id
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -34,10 +34,12 @@ public class Memory: Codable {
         let sharedAt = try container.decode(Date.self, forKey: .sharedAt)
         let name = try container.decode(String.self, forKey: .name)
         let externalId = try container.decodeIfPresent(String.self, forKey: .externalId)
-        let secret = try container.decode(String.self, forKey: .secret)
+        let secret = try container.decodeIfPresent(String.self, forKey: .secret)
         let ownerId = try container.decode(String.self, forKey: .ownerId)
         let collaboratorsCount = try container.decode(Int.self, forKey: .collaboratorsCount)
-        let isPersonal = try container.decodeIfPresent(Bool.self, forKey: .isPersonal)
+        // The API sends is_personal: true and omits the key otherwise; it never sends false or null,
+        // so an absent field means "not personal".
+        let isPersonal = try container.decodeIfPresent(Bool.self, forKey: .isPersonal) ?? false
         
         self.init(id: id, createdAt: createdAt, updatedAt: updatedAt, sharedAt: sharedAt, name: name, externalId: externalId, secret: secret, ownerId: ownerId, collaboratorsCount: collaboratorsCount, isPersonal: isPersonal)
     }
@@ -51,10 +53,10 @@ public class Memory: Codable {
         try container.encode(sharedAt, forKey: .sharedAt)
         try container.encode(name, forKey: .name)
         try container.encodeIfPresent(externalId, forKey: .externalId)
-        try container.encode(secret, forKey: .secret)
+        try container.encodeIfPresent(secret, forKey: .secret)
         try container.encode(ownerId, forKey: .ownerId)
         try container.encode(collaboratorsCount, forKey: .collaboratorsCount)
-        try container.encodeIfPresent(isPersonal, forKey: .isPersonal)
+        try container.encode(isPersonal, forKey: .isPersonal)
     }
     
     private enum CodingKeys: String, CodingKey {

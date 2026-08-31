@@ -10,6 +10,7 @@ import Foundation
 // - Glossary export and async export
 // - Glossary terms count
 // - Import status checking
+// - Sharing a glossary with the account or a group (add, rename, list, revoke)
 
 func main() async {
     // All examples can use environment variables for credentials:
@@ -172,6 +173,54 @@ func main() async {
 
         let totalEntries = finalCounts.unidirectional?.values.reduce(0, +) ?? 0
         print("   Total entries: \(totalEntries)")
+
+        // Example 8: Glossary sharing
+        // Sharing requires a multi-user account and the appropriate role (account owner for
+        // account-wide shares, owner/admin for group shares). Each call returns the shared
+        // glossary, whose `name` reflects the shared copy's name and `sharedAt` the share time.
+        print("=== Glossary Sharing ===")
+        do {
+            // Share with the whole account/team (the optional name: names the shared copy)
+            let teamShare = try await lara.glossaries.addAccountShare(id: glossaryId, name: "Shared with the team")
+            print("🤝 Shared with the account as: '\(teamShare.name)' (shared at \(teamShare.sharedAt))")
+
+            // Rename the account/team share
+            let renamedTeamShare = try await lara.glossaries.renameAccountShare(id: glossaryId, name: "Team glossary")
+            print("📝 Renamed account share to: '\(renamedTeamShare.name)'")
+
+            // List every share visible to the caller: the account share, group shares and user shares
+            let shares = try await lara.glossaries.getShares(id: glossaryId)
+            if let account = shares.account {
+                print("👥 Account share '\(account.shareName)' (\(account.permissions.rawValue))")
+            }
+            for group in shares.groups {
+                print("👥 Group \(group.name): '\(group.shareName)' (\(group.permissions.rawValue))")
+            }
+            for user in shares.users {
+                print("👤 User \(user.name): '\(user.shareName)' (\(user.permissions.rawValue))")
+            }
+
+            // Revoke the account/team share
+            _ = try await lara.glossaries.revokeAccountShare(id: glossaryId)
+            print("🚫 Revoked the account share")
+
+            // Group shares work the same way, addressed by a group ID (grp_...)
+            if let groupId = ProcessInfo.processInfo.environment["LARA_GROUP_ID"] {
+                let groupShare = try await lara.glossaries.addGroupShare(id: glossaryId, groupId: groupId, name: "Shared with the group")
+                print("🤝 Shared with group \(groupId) as: '\(groupShare.name)'")
+
+                _ = try await lara.glossaries.renameGroupShare(id: glossaryId, groupId: groupId, name: "Marketing group")
+                print("📝 Renamed the group share")
+
+                _ = try await lara.glossaries.revokeGroupShare(id: glossaryId, groupId: groupId)
+                print("🚫 Revoked the group share")
+            } else {
+                print("Set LARA_GROUP_ID to try the group sharing methods.")
+            }
+            print()
+        } catch {
+            print("Error sharing glossary: \(error)")
+        }
 
         // Cleanup
         print("=== Cleanup ===")
