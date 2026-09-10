@@ -118,14 +118,6 @@ func main() async {
             )
             print("Import started with ID: \(importWithCallback.id) (callback: \(callbackUrl))")
 
-            // You can also combine content type, gzip, and callbackUrl:
-            // let importWithCallback = try await lara.glossaries.importFile(
-            //     id: glossaryId,
-            //     file: csvData,
-            //     contentType: .csvTableUni,
-            //     gzip: true,
-            //     callbackUrl: callbackUrl
-            // )
             print()
         } else {
             print("CSV file not found: \(csvFilePath)\n")

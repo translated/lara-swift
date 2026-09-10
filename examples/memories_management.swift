@@ -104,7 +104,7 @@ func main() async {
             print("Importing TMX file: \(FileManager.default.displayName(atPath: tmxFilePath))")
 
             let tmxData = try Data(contentsOf: URL(fileURLWithPath: tmxFilePath))
-            let memoryImport4 = try await lara.memories.importTmx(id: memoryId, tmx: tmxData, gzip: false)
+            let memoryImport4 = try await lara.memories.importTmx(id: memoryId, tmx: tmxData)
             print("Import started with ID: \(memoryImport4.id)")
             print("Initial progress: \(Int(memoryImport4.progress * 100))%")
 

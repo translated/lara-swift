@@ -491,8 +491,7 @@ let glossaryImport = try await lara.glossaries.importFile(
     contentType: .csvTableUni
 )
 
-// Options are independent: contentType defaults to .csvTableUni and gzip defaults to false.
-// gzip describes already compressed data; it does not compress the input.
+// Options are independent: contentType defaults to .csvTableUni.
 // try await lara.glossaries.importFile(id: glossary.id, file: glossaryData, callbackUrl: callbackUrl)
 
 // Add (or replace) individual terms to glossary
