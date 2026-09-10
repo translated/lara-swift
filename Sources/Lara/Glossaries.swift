@@ -79,15 +79,8 @@ public class Glossaries {
         return try result.decoded(as: Glossary.self)
     }
 
-    public func importCsv(id: String, csv: Data, gzip: Bool = false, callbackUrl: String? = nil) async throws -> GlossaryImport {
-        return try await importCsv(id: id, csv: csv, contentType: .csvTableUni, gzip: gzip, callbackUrl: callbackUrl)
-    }
-
-    public func importCsv(id: String, csv: Data, contentType: GlossaryFileFormat, callbackUrl: String? = nil) async throws -> GlossaryImport {
-        return try await importCsv(id: id, csv: csv, contentType: contentType, gzip: false, callbackUrl: callbackUrl)
-    }
-
-    public func importCsv(id: String, csv: Data, contentType: GlossaryFileFormat, gzip: Bool, callbackUrl: String? = nil) async throws -> GlossaryImport {
+    /// Imports a glossary with independent named options. gzip marks already compressed data.
+    public func importFile(id: String, file: Data, contentType: GlossaryFileFormat = .csvTableUni, gzip: Bool = false, callbackUrl: String? = nil) async throws -> GlossaryImport {
         var params: [String: Any] = ["content_type": contentType.rawValue]
         if gzip {
             params["compression"] = "gzip"
@@ -96,10 +89,34 @@ public class Glossaries {
             params["callback_url"] = callbackUrl
         }
 
-        let files = ["csv": csv]
+        let files = ["csv": file]
+        let filenames = ["csv": contentType == .tbx ? "glossary.tbx" : "glossary.csv"]
 
-        let result = try await client.post(path: "/v2/glossaries/\(id)/import", params: params, files: files)
+        let result = try await client.post(path: "/v2/glossaries/\(id)/import", params: params, files: files, filenames: filenames)
         return try result.decoded(as: GlossaryImport.self)
+    }
+
+    @available(*, deprecated, message: "Use importFile(id:file:contentType:gzip:callbackUrl:) instead.")
+    public func importCsv(id: String, csv: Data, gzip: Bool = false, callbackUrl: String? = nil) async throws -> GlossaryImport {
+        return try await importFile(id: id, file: csv, gzip: gzip, callbackUrl: callbackUrl)
+    }
+
+    @available(*, deprecated, message: "Use importFile(id:file:contentType:gzip:callbackUrl:) instead.")
+    public func importCsv(id: String, csv: Data, contentType: GlossaryFileFormat, callbackUrl: String? = nil) async throws -> GlossaryImport {
+        try validateCsvContentType(contentType)
+        return try await importFile(id: id, file: csv, contentType: contentType, callbackUrl: callbackUrl)
+    }
+
+    @available(*, deprecated, renamed: "importFile(id:file:contentType:gzip:callbackUrl:)")
+    public func importCsv(id: String, csv: Data, contentType: GlossaryFileFormat, gzip: Bool, callbackUrl: String? = nil) async throws -> GlossaryImport {
+        try validateCsvContentType(contentType)
+        return try await importFile(id: id, file: csv, contentType: contentType, gzip: gzip, callbackUrl: callbackUrl)
+    }
+
+    private func validateCsvContentType(_ contentType: GlossaryFileFormat) throws {
+        if contentType == .tbx {
+            throw LaraValidationError("importCsv only supports CSV formats; use importFile for TBX files.")
+        }
     }
 
     public func getImportStatus(id: String) async throws -> GlossaryImport {
@@ -140,12 +157,12 @@ public class Glossaries {
         )
     }
 
-    /// Exports a glossary in unidirectional format.
+    /// Exports a glossary in the requested format.
     /// - Parameters:
     ///   - id: The glossary ID to export
-    ///   - contentType: csv/table-uni
-    ///   - source: Optional source language filter
-    /// - Returns: exported CSV data
+    ///   - contentType: A Lara glossary file format identifier, such as `csv/table-uni` or `tbx`
+    ///   - source: Required for unidirectional CSV; omit for multidirectional CSV and TBX
+    /// - Returns: Exported CSV or TBX content as UTF-8 text
     public func export(id: String, contentType: String = "csv/table-uni", source: String? = nil) async throws -> String {
         guard let format = GlossaryFileFormat(rawValue: contentType) else {
             throw LaraValidationError("Invalid content type: \(contentType)")
@@ -157,8 +174,8 @@ public class Glossaries {
     /// - Parameters:
     ///   - id: The glossary ID to export
     ///   - contentType: The file format for export
-    ///   - source: Optional source language filter
-    /// - Returns: exported CSV data
+    ///   - source: Required for unidirectional CSV; omit for multidirectional CSV and TBX
+    /// - Returns: Exported CSV or TBX content as UTF-8 text
     public func export(id: String, contentType: GlossaryFileFormat, source: String? = nil) async throws -> String {
         var params: [String: Any] = ["content_type": contentType.rawValue]
         if let source = source {

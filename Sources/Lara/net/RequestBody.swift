@@ -177,6 +177,7 @@ public struct MultipartFile {
         // Fallback for older systems
         let fallbackTypes: [String: String] = [
             "tmx": "application/xml",
+            "tbx": "application/xml",
             "xml": "application/xml",
             "gz": "application/gzip",
             "zip": "application/zip"

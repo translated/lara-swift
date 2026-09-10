@@ -88,7 +88,7 @@ func main() async {
             print("Importing CSV file: \(FileManager.default.displayName(atPath: csvFilePath))")
 
             let csvData = try Data(contentsOf: URL(fileURLWithPath: csvFilePath))
-            let glossaryImport = try await lara.glossaries.importCsv(id: glossaryId, csv: csvData, gzip: false)
+            let glossaryImport = try await lara.glossaries.importFile(id: glossaryId, file: csvData)
             print("Import started with ID: \(glossaryImport.id)")
             print("Initial progress: \(Int(glossaryImport.progress * 100))%")
 
@@ -111,18 +111,17 @@ func main() async {
         if FileManager.default.fileExists(atPath: csvFilePath) {
             let callbackUrl = "https://your-server.example.com/lara/import-callback" // Replace with your endpoint
             let csvData = try Data(contentsOf: URL(fileURLWithPath: csvFilePath))
-            let importWithCallback = try await lara.glossaries.importCsv(
+            let importWithCallback = try await lara.glossaries.importFile(
                 id: glossaryId,
-                csv: csvData,
-                gzip: false,
+                file: csvData,
                 callbackUrl: callbackUrl
             )
             print("Import started with ID: \(importWithCallback.id) (callback: \(callbackUrl))")
 
             // You can also combine content type, gzip, and callbackUrl:
-            // let importWithCallback = try await lara.glossaries.importCsv(
+            // let importWithCallback = try await lara.glossaries.importFile(
             //     id: glossaryId,
-            //     csv: csvData,
+            //     file: csvData,
             //     contentType: .csvTableUni,
             //     gzip: true,
             //     callbackUrl: callbackUrl

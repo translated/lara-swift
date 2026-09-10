@@ -482,10 +482,18 @@ _ = try await lara.memories.revokeAccountShare(id: memory.id)
 // Create glossary
 let glossary = try await lara.glossaries.create(name: "MyGlossary")
 
-// Import CSV from file URL
-let csvFileURL = URL(fileURLWithPath: "/path/to/your/glossary.csv")
-let csvData = try Data(contentsOf: csvFileURL)
-let glossaryImport = try await lara.glossaries.importCsv(id: "gls_1A2b3C4d5E6f7G8h9I0jKl", csv: csvData)
+// Import a glossary file (use contentType: .tbx for TBX files)
+let glossaryFileURL = URL(fileURLWithPath: "/path/to/your/glossary.csv")
+let glossaryData = try Data(contentsOf: glossaryFileURL)
+let glossaryImport = try await lara.glossaries.importFile(
+    id: "gls_1A2b3C4d5E6f7G8h9I0jKl",
+    file: glossaryData,
+    contentType: .csvTableUni
+)
+
+// Options are independent: contentType defaults to .csvTableUni and gzip defaults to false.
+// gzip describes already compressed data; it does not compress the input.
+// try await lara.glossaries.importFile(id: glossary.id, file: glossaryData, callbackUrl: callbackUrl)
 
 // Add (or replace) individual terms to glossary
 let terms = [
