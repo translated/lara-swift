@@ -96,7 +96,8 @@ func main() async {
         let textOptions = ImageTextTranslationOptions(
             adaptTo: ["mem_1A2b3C4d5E6f7G8h9I0jKl"], // Replace with actual memory IDs
             glossaries: ["gls_1A2b3C4d5E6f7G8h9I0jKl"], // Replace with actual glossary IDs
-            style: .faithful
+            style: .faithful,
+            includeLayout: true
         )
 
         let results = try await lara.images.translateText(
@@ -116,6 +117,13 @@ func main() async {
             print("Translated: \(paragraph.translation)")
 
         }
+
+        // includeLayout guarantees the metadata required by classic rendering models.
+        let rendered = try await lara.images.renderTranslated(
+            file: file3, source: results.sourceLanguage, target: targetLang,
+            paragraphs: results.paragraphs, model: .overlay
+        )
+        try rendered.write(to: URL(fileURLWithPath: "rendered_image.png"))
 
         print("\n🎉 All image translation examples completed successfully!")
 

@@ -97,6 +97,57 @@ public class ImageTranslator {
         return try response.decoded(as: ImageTextResult.self)
     }
 
+    /// Renders supplied translations onto the original image without translating again.
+    /// Overlay and inpainting require bbox, linesBboxes, textInfo, and alignment on every
+    /// paragraph. Generative models accept text-only paragraphs or complete layout.
+    /// An omitted model defaults to generative_fast.
+    public func renderTranslated(
+        file: MultipartFile,
+        source: String? = nil,
+        target: String,
+        paragraphs: [ImageParagraph],
+        model: ImageTranslationModel? = nil,
+        noTrace: Bool = false
+    ) async throws -> Data {
+        // Match metadata is not part of the rendering endpoint.
+        let renderParagraphs = paragraphs.map {
+            ImageParagraph(text: $0.text, translation: $0.translation,
+                           bbox: $0.bbox, linesBboxes: $0.linesBboxes,
+                           textInfo: $0.textInfo, alignment: $0.alignment)
+        }
+        let paragraphsData = try JSONEncoder().encode(renderParagraphs)
+        var params: [String: Any] = [
+            "target": target,
+            "paragraphs": String(decoding: paragraphsData, as: UTF8.self)
+        ]
+        if let source = source { params["source"] = source }
+        if let model = model { params["model"] = model.rawValue }
+        let headers = noTrace ? ["X-No-Trace": "true"] : [:]
+        let response = try await client.post(
+            path: "/v2/images/render-translated",
+            params: params,
+            files: ["image": file.data],
+            filenames: ["image": file.filename],
+            headers: headers
+        )
+        return response.data
+    }
+
+    /// Convenience method to render supplied translations from image Data.
+    public func renderTranslated(
+        imageData: Data,
+        filename: String,
+        source: String? = nil,
+        target: String,
+        paragraphs: [ImageParagraph],
+        model: ImageTranslationModel? = nil,
+        noTrace: Bool = false
+    ) async throws -> Data {
+        let file = MultipartFile(filename: filename, data: imageData)
+        return try await renderTranslated(file: file, source: source, target: target,
+                                          paragraphs: paragraphs, model: model, noTrace: noTrace)
+    }
+
     /// Convenience method to translate an image from Data
     /// - Parameters:
     ///   - imageData: Raw image data

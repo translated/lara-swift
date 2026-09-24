@@ -330,6 +330,37 @@ let textResults = try await lara.images.translateText(
 )
 ```
 
+Request layout independently of verbose match details, then render the supplied translations:
+
+```swift
+let result = try await lara.images.translateText(
+    file: file, source: "en", target: "fr",
+    options: ImageTextTranslationOptions(includeLayout: true)
+)
+var paragraphs = result.paragraphs
+if let paragraph = paragraphs.first {
+    paragraphs[0] = ImageParagraph(
+        text: paragraph.text, translation: "Bonjour !",
+        bbox: paragraph.bbox, linesBboxes: paragraph.linesBboxes,
+        textInfo: paragraph.textInfo, alignment: paragraph.alignment
+    )
+}
+let rendered = try await lara.images.renderTranslated(
+    file: file, source: result.sourceLanguage, target: "fr", paragraphs: paragraphs,
+    model: .overlay
+)
+try rendered.write(to: URL(fileURLWithPath: "rendered.png"))
+```
+
+When `includeLayout` is `true`, every paragraph contains complete layout metadata and can be passed
+directly to a classic rendering model. The properties remain optional because `ImageParagraph` also
+represents text-only responses when layout is not requested. Rendering uses the supplied translations
+without translating again and defaults to `.generativeFast`. Pass `model` and `noTrace` to configure rendering.
+`.overlay` and `.inpainting` require `bbox`, `linesBboxes`, `textInfo`, and `alignment` on every paragraph;
+generative models accept text-only paragraphs or complete layout. Memory and glossary matches are
+omitted from rendering requests. Both `file:` and `imageData:filename:` overloads are available.
+
+
 ### 🔊 Audio Translation
 #### Simple audio translation
 ```swift
