@@ -8,8 +8,11 @@ public class Glossary: Codable {
     public let name: String
     public let ownerId: String
     public let isPersonal: Bool
+    /// Effective combined mask in GET list/detail; selected share's stored mask in GET /shares.
+    /// Nil when omitted, including non-GET responses.
+    public let permissionMask: PermissionMask?
 
-    init(id: String, createdAt: Date, updatedAt: Date, sharedAt: Date, name: String, ownerId: String, isPersonal: Bool = false) {
+    init(id: String, createdAt: Date, updatedAt: Date, sharedAt: Date, name: String, ownerId: String, isPersonal: Bool = false, permissionMask: PermissionMask? = nil) {
         self.id = id
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -17,6 +20,7 @@ public class Glossary: Codable {
         self.name = name
         self.ownerId = ownerId
         self.isPersonal = isPersonal
+        self.permissionMask = permissionMask
     }
 
     public required convenience init(from decoder: Decoder) throws {
@@ -31,8 +35,9 @@ public class Glossary: Codable {
         // The API sends is_personal: true and omits the key otherwise; it never sends false or null,
         // so an absent field means "not personal".
         let isPersonal = try container.decodeIfPresent(Bool.self, forKey: .isPersonal) ?? false
+        let permissionMask = try container.decodeIfPresent(PermissionMask.self, forKey: .permissionMask)
 
-        self.init(id: id, createdAt: createdAt, updatedAt: updatedAt, sharedAt: sharedAt, name: name, ownerId: ownerId, isPersonal: isPersonal)
+        self.init(id: id, createdAt: createdAt, updatedAt: updatedAt, sharedAt: sharedAt, name: name, ownerId: ownerId, isPersonal: isPersonal, permissionMask: permissionMask)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -45,6 +50,7 @@ public class Glossary: Codable {
         try container.encode(name, forKey: .name)
         try container.encode(ownerId, forKey: .ownerId)
         try container.encode(isPersonal, forKey: .isPersonal)
+        try container.encodeIfPresent(permissionMask, forKey: .permissionMask)
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -55,5 +61,6 @@ public class Glossary: Codable {
         case name
         case ownerId = "owner_id"
         case isPersonal = "is_personal"
+        case permissionMask = "permission_mask"
     }
 }

@@ -21,7 +21,7 @@ func styleguideDecodesRequiredSharedAtAndIsPersonal() throws {
 }
 
 @Test
-func sharesPreserveUnknownPermission() throws {
+func sharesPreserveUnknownPermissionMask() throws {
     let json = """
     {
         "glossary": {
@@ -37,7 +37,7 @@ func sharesPreserveUnknownPermission() throws {
             "name": "Example account",
             "share_name": "Team share",
             "shared_at": "2026-08-28T10:00:00.000Z",
-            "permissions": "admin"
+            "permission_mask": "future-mask"
         },
         "groups": [],
         "users": []
@@ -46,5 +46,5 @@ func sharesPreserveUnknownPermission() throws {
 
     let shares = try APIJSONDecoder.decode(GlossaryShares.self, from: Data(json.utf8))
 
-    #expect(shares.account?.permissions.rawValue == "admin")
+    #expect(shares.account?.permissionMask.rawValue == "future-mask")
 }

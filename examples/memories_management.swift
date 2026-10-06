@@ -175,13 +175,13 @@ func main() async {
             // List every share visible to the caller: the account share, group shares and user shares
             let shares = try await lara.memories.getShares(id: memoryId)
             if let account = shares.account {
-                print("👥 Account share '\(account.shareName)' (\(account.permissions.rawValue))")
+                print("👥 Account share '\(account.shareName)' (\(account.permissionMask.rawValue))")
             }
             for group in shares.groups {
-                print("👥 Group \(group.name): '\(group.shareName)' (\(group.permissions.rawValue))")
+                print("👥 Group \(group.name): '\(group.shareName)' (\(group.permissionMask.rawValue))")
             }
             for user in shares.users {
-                print("👤 User \(user.name): '\(user.shareName)' (\(user.permissions.rawValue))")
+                print("👤 User \(user.name): '\(user.shareName)' (\(user.permissionMask.rawValue))")
             }
 
             // Revoke the account/team share
