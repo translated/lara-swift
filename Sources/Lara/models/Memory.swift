@@ -10,12 +10,11 @@ public class Memory: Codable {
     public let secret: String?
     public let ownerId: String
     public let collaboratorsCount: Int
-    public let isPersonal: Bool
     /// Effective combined mask in GET list/detail; selected share's stored mask in GET /shares.
     /// Nil when omitted, including non-GET responses.
     public let permissionMask: PermissionMask?
 
-    init(id: String, createdAt: Date, updatedAt: Date, sharedAt: Date, name: String, externalId: String?, secret: String?, ownerId: String, collaboratorsCount: Int, isPersonal: Bool = false, permissionMask: PermissionMask? = nil) {
+    init(id: String, createdAt: Date, updatedAt: Date, sharedAt: Date, name: String, externalId: String?, secret: String?, ownerId: String, collaboratorsCount: Int, permissionMask: PermissionMask? = nil) {
         self.id = id
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -25,7 +24,6 @@ public class Memory: Codable {
         self.secret = secret
         self.ownerId = ownerId
         self.collaboratorsCount = collaboratorsCount
-        self.isPersonal = isPersonal
         self.permissionMask = permissionMask
     }
     
@@ -41,12 +39,9 @@ public class Memory: Codable {
         let secret = try container.decodeIfPresent(String.self, forKey: .secret)
         let ownerId = try container.decode(String.self, forKey: .ownerId)
         let collaboratorsCount = try container.decode(Int.self, forKey: .collaboratorsCount)
-        // The API sends is_personal: true and omits the key otherwise; it never sends false or null,
-        // so an absent field means "not personal".
-        let isPersonal = try container.decodeIfPresent(Bool.self, forKey: .isPersonal) ?? false
         let permissionMask = try container.decodeIfPresent(PermissionMask.self, forKey: .permissionMask)
         
-        self.init(id: id, createdAt: createdAt, updatedAt: updatedAt, sharedAt: sharedAt, name: name, externalId: externalId, secret: secret, ownerId: ownerId, collaboratorsCount: collaboratorsCount, isPersonal: isPersonal, permissionMask: permissionMask)
+        self.init(id: id, createdAt: createdAt, updatedAt: updatedAt, sharedAt: sharedAt, name: name, externalId: externalId, secret: secret, ownerId: ownerId, collaboratorsCount: collaboratorsCount, permissionMask: permissionMask)
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -61,7 +56,6 @@ public class Memory: Codable {
         try container.encodeIfPresent(secret, forKey: .secret)
         try container.encode(ownerId, forKey: .ownerId)
         try container.encode(collaboratorsCount, forKey: .collaboratorsCount)
-        try container.encode(isPersonal, forKey: .isPersonal)
         try container.encodeIfPresent(permissionMask, forKey: .permissionMask)
     }
     
@@ -75,7 +69,6 @@ public class Memory: Codable {
         case secret
         case ownerId = "owner_id"
         case collaboratorsCount = "collaborators_count"
-        case isPersonal = "is_personal"
         case permissionMask = "permission_mask"
     }
     

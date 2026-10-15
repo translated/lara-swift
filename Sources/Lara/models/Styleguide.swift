@@ -8,12 +8,11 @@ public class Styleguide: Codable {
     public let createdAt: Date
     public let updatedAt: Date
     public let sharedAt: Date
-    public let isPersonal: Bool
     /// Effective combined mask in GET list/detail; selected share's stored mask in GET /shares.
     /// Nil when omitted, including non-GET responses.
     public let permissionMask: PermissionMask?
 
-    init(id: String, name: String, content: String? = nil, ownerId: String, createdAt: Date, updatedAt: Date, sharedAt: Date, isPersonal: Bool = false, permissionMask: PermissionMask? = nil) {
+    init(id: String, name: String, content: String? = nil, ownerId: String, createdAt: Date, updatedAt: Date, sharedAt: Date, permissionMask: PermissionMask? = nil) {
         self.id = id
         self.name = name
         self.content = content
@@ -21,7 +20,6 @@ public class Styleguide: Codable {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.sharedAt = sharedAt
-        self.isPersonal = isPersonal
         self.permissionMask = permissionMask
     }
 
@@ -35,12 +33,9 @@ public class Styleguide: Codable {
         let createdAt = try container.decode(Date.self, forKey: .createdAt)
         let updatedAt = try container.decode(Date.self, forKey: .updatedAt)
         let sharedAt = try container.decode(Date.self, forKey: .sharedAt)
-        // The API sends is_personal: true and omits the key otherwise; it never sends false or null,
-        // so an absent field means "not personal".
-        let isPersonal = try container.decodeIfPresent(Bool.self, forKey: .isPersonal) ?? false
         let permissionMask = try container.decodeIfPresent(PermissionMask.self, forKey: .permissionMask)
 
-        self.init(id: id, name: name, content: content, ownerId: ownerId, createdAt: createdAt, updatedAt: updatedAt, sharedAt: sharedAt, isPersonal: isPersonal, permissionMask: permissionMask)
+        self.init(id: id, name: name, content: content, ownerId: ownerId, createdAt: createdAt, updatedAt: updatedAt, sharedAt: sharedAt, permissionMask: permissionMask)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -53,7 +48,6 @@ public class Styleguide: Codable {
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
         try container.encode(sharedAt, forKey: .sharedAt)
-        try container.encode(isPersonal, forKey: .isPersonal)
         try container.encodeIfPresent(permissionMask, forKey: .permissionMask)
     }
 
@@ -65,7 +59,6 @@ public class Styleguide: Codable {
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case sharedAt = "shared_at"
-        case isPersonal = "is_personal"
         case permissionMask = "permission_mask"
     }
 }

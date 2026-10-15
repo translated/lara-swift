@@ -37,7 +37,6 @@ func main() async {
         print("=== Styleguide Operations ===")
         if let retrieved = try await lara.styleguides.get(id: styleguide.id) {
             print("📖 Styleguide: \(retrieved.name) (Owner: \(retrieved.ownerId))")
-            print("   Personal: \(retrieved.isPersonal)")
             print("   Created at: \(retrieved.createdAt)")
             if let content = retrieved.content {
                 let preview = String(content.prefix(80))
