@@ -215,6 +215,44 @@ let options = TranslateOptions(
 let advancedTranslation = try await lara.translate(text: "Hello", source: "en", target: "fr", options: options)
 ```
 
+#### Text Translation with Image Context
+
+Pass `imageContext` to use an image as visual context for translating text, with reasoning enabled:
+
+```swift
+var options = TranslateOptions(
+    reasoning: true,
+    imageContext: .single(ImageContext(url: "https://example.com/storefront.png"))
+)
+let result = try await lara.translate(text: "Open", source: "en-US", target: "it-IT", options: options)
+print(try result.translation.getTranslation() ?? "")
+
+for warning in result.warnings?.reasoning?.warnings ?? [] {
+    print(warning.code, warning.message)
+}
+```
+
+You can also supply a single-element array or an inline image:
+
+```swift
+let encoded = try Data(contentsOf: URL(fileURLWithPath: "storefront.png")).base64EncodedString()
+options.imageContext = .multiple([ImageContext(url: "data:image/png;base64,\(encoded)")])
+```
+
+The API accepts at most one image: an HTTPS URL or a base64 PNG, JPEG or WebP data
+URL. Inline images must match their declared MIME type and contain at most 5 MiB
+of decoded data; the serialized request body is limited to 16 MiB. Omitting
+`imageContext` or passing `.multiple([])` preserves text-only behavior. Validation is performed
+by the API, which returns 400 for invalid input and 413 for size violations.
+
+If the image cannot be used, the server may retry the entire request with reasoning
+without images. The result then includes an `image_context_unavailable` warning
+under `warnings.reasoning.warnings` in the API response, exposed by the typed warning
+models shown above. `warnings.reasoning.applied` is `true` when reasoning succeeds
+without images, or `false` (with an error containing `statusCode` and `message`) when
+the server falls back to standard translation. Reference retrieval and prosa failures
+are available under `warnings.references` and `warnings.prosa`.
+
 #### Quality Estimation
 
 Use `qualityEstimation()` to score how well a translation matches its source. Pass a single sentence/translation pair to get a single result, or two parallel arrays to get one result per pair.

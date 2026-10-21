@@ -56,6 +56,8 @@ public struct TranslateOptions {
     public var headers: [String: String]?
     public var style: TranslationStyle?
     public var reasoning: Bool?
+    /// Non-empty image context requires reasoning=true. Image validation is performed by the API.
+    public var imageContext: ImageContextValue?
     public var metadata: TranslationMetadata?
     public var profanitiesDetect: ProfanitiesDetect?
     public var profanitiesHandling: ProfanitiesHandling?
@@ -78,6 +80,7 @@ public struct TranslateOptions {
                 headers: [String: String]? = nil,
                 style: TranslationStyle? = nil,
                 reasoning: Bool? = nil,
+                imageContext: ImageContextValue? = nil,
                 metadata: TranslationMetadata? = nil,
                 profanitiesDetect: ProfanitiesDetect? = nil,
                 profanitiesHandling: ProfanitiesHandling? = nil,
@@ -99,6 +102,7 @@ public struct TranslateOptions {
         self.headers = headers
         self.style = style
         self.reasoning = reasoning
+        self.imageContext = imageContext
         self.metadata = metadata
         self.profanitiesDetect = profanitiesDetect
         self.profanitiesHandling = profanitiesHandling
@@ -148,6 +152,9 @@ public struct TranslateOptions {
         }
         if let reasoning = self.reasoning {
             params["reasoning"] = reasoning
+        }
+        if let imageContext = self.imageContext {
+            params["image_context"] = imageContext.toJSON()
         }
         if let metadata = self.metadata {
             switch metadata {

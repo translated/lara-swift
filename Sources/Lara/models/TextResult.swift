@@ -10,8 +10,9 @@ public class TextResult: Codable {
     public let glossariesMatches: GlossariesMatches?
     public let profanities: ProfanitiesResult?
     public let styleguideResults: StyleguideResults?
+    public let warnings: TextWarnings?
 
-    public init(contentType: String, sourceLanguage: String, translation: TranslatedValue, adaptedTo: [String], glossaries: [String]?, adaptedToMatches: AdaptedToMatches?, glossariesMatches: GlossariesMatches?, profanities: ProfanitiesResult? = nil, styleguideResults: StyleguideResults? = nil) {
+    public init(contentType: String, sourceLanguage: String, translation: TranslatedValue, adaptedTo: [String], glossaries: [String]?, adaptedToMatches: AdaptedToMatches?, glossariesMatches: GlossariesMatches?, profanities: ProfanitiesResult? = nil, styleguideResults: StyleguideResults? = nil, warnings: TextWarnings? = nil) {
         self.contentType = contentType
         self.sourceLanguage = sourceLanguage
         self.translation = translation
@@ -21,6 +22,7 @@ public class TextResult: Codable {
         self.glossariesMatches = glossariesMatches
         self.profanities = profanities
         self.styleguideResults = styleguideResults
+        self.warnings = warnings
     }
     
     public required convenience init(from decoder: Decoder) throws {
@@ -34,8 +36,9 @@ public class TextResult: Codable {
         let glossariesMatches = try container.decodeIfPresent(GlossariesMatches.self, forKey: .glossariesMatches)
         let profanities = try container.decodeIfPresent(ProfanitiesResult.self, forKey: .profanities)
         let styleguideResults = try container.decodeIfPresent(StyleguideResults.self, forKey: .styleguideResults)
+        let warnings = try container.decodeIfPresent(TextWarnings.self, forKey: .warnings)
 
-        self.init(contentType: contentType, sourceLanguage: sourceLanguage, translation: translation, adaptedTo: adaptedTo, glossaries: glossaries, adaptedToMatches: adaptedToMatches, glossariesMatches: glossariesMatches, profanities: profanities, styleguideResults: styleguideResults)
+        self.init(contentType: contentType, sourceLanguage: sourceLanguage, translation: translation, adaptedTo: adaptedTo, glossaries: glossaries, adaptedToMatches: adaptedToMatches, glossariesMatches: glossariesMatches, profanities: profanities, styleguideResults: styleguideResults, warnings: warnings)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -49,6 +52,7 @@ public class TextResult: Codable {
         try container.encodeIfPresent(glossariesMatches, forKey: .glossariesMatches)
         try container.encodeIfPresent(profanities, forKey: .profanities)
         try container.encodeIfPresent(styleguideResults, forKey: .styleguideResults)
+        try container.encodeIfPresent(warnings, forKey: .warnings)
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -59,6 +63,7 @@ public class TextResult: Codable {
         case glossaries
         case adaptedToMatches = "adapted_to_matches"
         case glossariesMatches = "glossaries_matches"
+        case warnings
         case profanities
         case styleguideResults = "styleguide_results"
     }
