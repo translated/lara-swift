@@ -36,8 +36,8 @@ func main() async {
         let glossaryId = glossary.id
 
         // List all glossaries
-        let glossaries = try await lara.glossaries.list()
-        print("📝 Total glossaries: \(glossaries.count)")
+        let glossaries = try await lara.glossaries.listPaginated()
+        print("📝 Total glossaries: \(glossaries.total)")
         print()
 
         // Example 2: Glossary operations

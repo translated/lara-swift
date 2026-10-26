@@ -43,8 +43,8 @@ func main() async {
         print("📝 Updated name: '\(memoryId)' -> '\(updatedMemory.name)'")
 
         // List all memories
-        let memories = try await lara.memories.list()
-        print("📝 Total memories: \(memories.count)")
+        let memories = try await lara.memories.listPaginated()
+        print("📝 Total memories: \(memories.total)")
 
         // Example 2: Adding translations
         // Important: To update/overwrite a translation unit you must provide a tuid. Calls without a tuid always create a new unit and will not update existing entries.

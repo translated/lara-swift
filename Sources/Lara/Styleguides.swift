@@ -7,9 +7,17 @@ public class Styleguides {
         self.client = client
     }
 
+    @available(*, deprecated, message: "Use listPaginated(options:) instead.")
     public func list() async throws -> [Styleguide] {
         let result = try await client.get(path: "/v2/styleguides")
         return try result.decoded(as: [Styleguide].self)
+    }
+
+    /// Lists resources with optional name filtering and pagination.
+    /// Without options, returns the complete list without pagination.
+    /// Providing search, page, or size enables pagination, defaulting to page 1 and size 20.
+    public func listPaginated(options: ResourceQueryOptions? = nil) async throws -> CollectionResult<Styleguide> {
+        return try await client.getCollection(path: "/v2/styleguides", options: options)
     }
 
     public func get(id: String) async throws -> Styleguide? {

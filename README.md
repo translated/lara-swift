@@ -468,6 +468,35 @@ let memory = try await lara.memories.create(name: "MyMemory")
 // Create memory with external ID (MyMemory integration)
 let memoryWithExternalId = try await lara.memories.create(name: "Memory from MyMemory", externalId: "aabb1122")
 
+// listPaginated(options:) supports optional name filtering and pagination.
+// Without options (or with empty options), it returns all memories without pagination.
+// Providing search, page, or size enables pagination.
+let memoryCollection = try await lara.memories.listPaginated()
+let memories = memoryCollection.items
+let memoryTotal = memoryCollection.total
+
+// Providing page or size enables pagination (page starts at 1; size: 1–200).
+// The missing parameter defaults to page 1 or size 20.
+let memoryPage = try await lara.memories.listPaginated(
+    options: ResourceQueryOptions(page: 2, size: 50)
+)
+let memoryDefaultSize = try await lara.memories.listPaginated(
+    options: ResourceQueryOptions(page: 2) // Page 2, 20 per page
+)
+let memoryFirstPage = try await lara.memories.listPaginated(
+    options: ResourceQueryOptions(size: 50) // Page 1, 50 per page
+)
+
+// Pass search to filter by displayed name (case- and accent-insensitive).
+// It matches substrings and preserves spaces.
+// Combine search with page and size to paginate matching results.
+// If omitted, page defaults to 1 and size to 20.
+let memorySearch = try await lara.memories.listPaginated(
+    options: ResourceQueryOptions(search: "Marketing", page: 2, size: 50)
+)
+
+// list() is deprecated; use listPaginated(options:) instead. list() still returns an array.
+
 // Important: To update/overwrite a translation unit you must provide a tuid. Calls without a tuid always create a new unit and will not update existing entries.
 // Add translation to single memory
 let memoryImport = try await lara.memories.addTranslation(
@@ -551,6 +580,35 @@ _ = try await lara.memories.revokeAccountShare(id: memory.id)
 // Create glossary
 let glossary = try await lara.glossaries.create(name: "MyGlossary")
 
+// listPaginated(options:) supports optional name filtering and pagination.
+// Without options (or with empty options), it returns all glossaries without pagination.
+// Providing search, page, or size enables pagination.
+let glossaryCollection = try await lara.glossaries.listPaginated()
+let glossaries = glossaryCollection.items
+let glossaryTotal = glossaryCollection.total
+
+// Providing page or size enables pagination (page starts at 1; size: 1–200).
+// The missing parameter defaults to page 1 or size 20.
+let glossaryPage = try await lara.glossaries.listPaginated(
+    options: ResourceQueryOptions(page: 2, size: 50)
+)
+let glossaryDefaultSize = try await lara.glossaries.listPaginated(
+    options: ResourceQueryOptions(page: 2) // Page 2, 20 per page
+)
+let glossaryFirstPage = try await lara.glossaries.listPaginated(
+    options: ResourceQueryOptions(size: 50) // Page 1, 50 per page
+)
+
+// Pass search to filter by displayed name (case- and accent-insensitive).
+// It matches substrings and preserves spaces.
+// Combine search with page and size to paginate matching results.
+// If omitted, page defaults to 1 and size to 20.
+let glossarySearch = try await lara.glossaries.listPaginated(
+    options: ResourceQueryOptions(search: "Marketing", page: 2, size: 50)
+)
+
+// list() is deprecated; use listPaginated(options:) instead. list() still returns an array.
+
 // Import a glossary file (use contentType: .tbx for TBX files)
 let glossaryFileURL = URL(fileURLWithPath: "/path/to/your/glossary.csv")
 let glossaryData = try Data(contentsOf: glossaryFileURL)
@@ -605,8 +663,34 @@ _ = try await lara.glossaries.revokeAccountShare(id: glossary.id)
 Styleguides let you apply custom translation style rules. They can be created, listed, retrieved, updated, and deleted through the SDK.
 
 ```swift
-// List all styleguides
-let styleguides = try await lara.styleguides.list()
+// listPaginated(options:) supports optional name filtering and pagination.
+// Without options (or with empty options), it returns all styleguides without pagination.
+// Providing search, page, or size enables pagination.
+let styleguideCollection = try await lara.styleguides.listPaginated()
+let styleguides = styleguideCollection.items
+let styleguideTotal = styleguideCollection.total
+
+// Providing page or size enables pagination (page starts at 1; size: 1–200).
+// The missing parameter defaults to page 1 or size 20.
+let styleguidePage = try await lara.styleguides.listPaginated(
+    options: ResourceQueryOptions(page: 2, size: 50)
+)
+let styleguideDefaultSize = try await lara.styleguides.listPaginated(
+    options: ResourceQueryOptions(page: 2) // Page 2, 20 per page
+)
+let styleguideFirstPage = try await lara.styleguides.listPaginated(
+    options: ResourceQueryOptions(size: 50) // Page 1, 50 per page
+)
+
+// Pass search to filter by displayed name (case- and accent-insensitive).
+// It matches substrings and preserves spaces.
+// Combine search with page and size to paginate matching results.
+// If omitted, page defaults to 1 and size to 20.
+let styleguideSearch = try await lara.styleguides.listPaginated(
+    options: ResourceQueryOptions(search: "Marketing", page: 2, size: 50)
+)
+
+// list() is deprecated; use listPaginated(options:) instead. list() still returns an array.
 
 // Get a specific styleguide by ID
 let styleguide = try await lara.styleguides.get(id: "stg_1A2b3C4d5E6f7G8h9I0jKl")

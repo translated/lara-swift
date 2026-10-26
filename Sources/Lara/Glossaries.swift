@@ -11,9 +11,17 @@ public class Glossaries {
     }
 
 
+    @available(*, deprecated, message: "Use listPaginated(options:) instead.")
     public func list() async throws -> [Glossary] {
         let result = try await client.get(path: "/v2/glossaries")
         return try result.decoded(as: [Glossary].self)
+    }
+
+    /// Lists resources with optional name filtering and pagination.
+    /// Without options, returns the complete list without pagination.
+    /// Providing search, page, or size enables pagination, defaulting to page 1 and size 20.
+    public func listPaginated(options: ResourceQueryOptions? = nil) async throws -> CollectionResult<Glossary> {
+        return try await client.getCollection(path: "/v2/glossaries", options: options)
     }
 
     public func get(id: String) async throws -> Glossary {

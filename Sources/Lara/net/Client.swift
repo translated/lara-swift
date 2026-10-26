@@ -56,6 +56,11 @@ public class Client {
         return try await request(method: "GET", path: path, params: params, files: nil, headers: headers)
     }
 
+    internal func getCollection<T: Codable>(path: String, options: ResourceQueryOptions?) async throws -> CollectionResult<T> {
+        let response = try await get(path: path, params: options?.toParams())
+        return try response.decodedCollection(as: T.self)
+    }
+
     public func post(path: String, params: [String: Any]? = nil, files: [String: Data]? = nil, filenames: [String: String]? = nil, headers: [String: String]? = nil) async throws -> ClientResponse {
         let multipartFiles: [String: MultipartFile]?
 
@@ -105,6 +110,8 @@ public class Client {
                     queryItems.append(URLQueryItem(name: key, value: String(describing: value)))
                 }
                 components.queryItems = queryItems
+                // Form-style query parsers interpret an unescaped + as a space.
+                components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
                 requestUrl = components.url!
                 requestBody = nil
             } else {

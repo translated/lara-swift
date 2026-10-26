@@ -139,12 +139,12 @@ func main() async {
         // Example 8: List available styleguides
         print("=== List Available Styleguides ===")
         var styleguideId: String? = nil
-        let styleguides = try await lara.styleguides.list()
-        print("Total styleguides: \(styleguides.count)")
-        for sg in styleguides {
+        let styleguides = try await lara.styleguides.listPaginated()
+        print("Total styleguides: \(styleguides.total)")
+        for sg in styleguides.items {
             print("  - \(sg.name) (ID: \(sg.id))")
         }
-        if let first = styleguides.first {
+        if let first = styleguides.items.first {
             styleguideId = first.id
         }
         print()

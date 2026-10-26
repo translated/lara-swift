@@ -30,8 +30,8 @@ func main() async {
         print("✅ Created styleguide: \(styleguide.name) (ID: \(styleguide.id))")
         styleguideId = styleguide.id
 
-        let styleguides = try await lara.styleguides.list()
-        print("📝 Total styleguides: \(styleguides.count)")
+        let styleguides = try await lara.styleguides.listPaginated()
+        print("📝 Total styleguides: \(styleguides.total)")
         print()
 
         print("=== Styleguide Operations ===")
