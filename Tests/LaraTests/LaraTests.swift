@@ -131,3 +131,19 @@ func successfulTranslationDecodesAPIFailureWarning(stage: String) throws {
     #expect(encodedError["status_code"] as? Int == 502)
     #expect(encodedError["statusCode"] == nil)
 }
+
+@Test(arguments: ["low", "medium", "high"])
+func reasoningEffortParameters(effort: String) throws {
+    let level = try #require(ReasoningEffort(rawValue: effort))
+    let params = TranslateOptions(reasoning: true, effort: level).toParams()
+    let data = try JSONSerialization.data(withJSONObject: params)
+    let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    #expect(json["effort"] as? String == effort)
+    #expect(json["reasoning"] as? Bool == true)
+}
+
+@Test
+func omittedReasoningEffort() {
+    #expect(TranslateOptions().toParams()["effort"] == nil)
+    #expect(TranslateOptions(reasoning: true).toParams()["effort"] == nil)
+}

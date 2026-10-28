@@ -11,6 +11,12 @@ public enum UseCache: String {
     case overwrite
 }
 
+public enum ReasoningEffort: String, Codable {
+    case low
+    case medium
+    case high
+}
+
 public enum TranslationStyle: String, Codable {
     case faithful
     case fluid
@@ -56,6 +62,8 @@ public struct TranslateOptions {
     public var headers: [String: String]?
     public var style: TranslationStyle?
     public var reasoning: Bool?
+    /// Requires reasoning=true. Leave nil to use the server default.
+    public var effort: ReasoningEffort?
     /// Non-empty image context requires reasoning=true. Image validation is performed by the API.
     public var imageContext: ImageContextValue?
     public var metadata: TranslationMetadata?
@@ -80,6 +88,7 @@ public struct TranslateOptions {
                 headers: [String: String]? = nil,
                 style: TranslationStyle? = nil,
                 reasoning: Bool? = nil,
+                effort: ReasoningEffort? = nil,
                 imageContext: ImageContextValue? = nil,
                 metadata: TranslationMetadata? = nil,
                 profanitiesDetect: ProfanitiesDetect? = nil,
@@ -102,6 +111,7 @@ public struct TranslateOptions {
         self.headers = headers
         self.style = style
         self.reasoning = reasoning
+        self.effort = effort
         self.imageContext = imageContext
         self.metadata = metadata
         self.profanitiesDetect = profanitiesDetect
@@ -152,6 +162,9 @@ public struct TranslateOptions {
         }
         if let reasoning = self.reasoning {
             params["reasoning"] = reasoning
+        }
+        if let effort = self.effort {
+            params["effort"] = effort.rawValue
         }
         if let imageContext = self.imageContext {
             params["image_context"] = imageContext.toJSON()
