@@ -769,7 +769,6 @@ let options = TranslateOptions(
     instructions: ["instruction"],                        // Translation instructions
     style: .fluid,                                        // Translation style (.fluid, .faithful, .creative)
     contentType: "text/plain",                            // Content type (text/plain, text/html, etc.)
-    multiline: true,                                      // Enable multiline translation
     timeoutMs: 10000,                                     // Request timeout in milliseconds
     noTrace: false,                                       // Disable request tracing
     verbose: false,                                       // Enable verbose response

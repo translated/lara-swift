@@ -52,6 +52,8 @@ public struct TranslateOptions {
     public var glossaries: [String]?
     public var instructions: [String]?
     public var contentType: String?
+    /// This parameter is deprecated.
+    @available(*, deprecated, message: "This parameter is deprecated.")
     public var multiline: Bool?
     public var timeoutMs: Int64?
     public var priority: Priority?
@@ -78,7 +80,6 @@ public struct TranslateOptions {
                 glossaries: [String]? = nil,
                 instructions: [String]? = nil,
                 contentType: String? = nil,
-                multiline: Bool? = nil,
                 timeoutMs: Int64? = nil,
                 priority: Priority? = nil,
                 useCache: UseCache? = nil,
@@ -101,7 +102,6 @@ public struct TranslateOptions {
         self.glossaries = glossaries
         self.instructions = instructions
         self.contentType = contentType
-        self.multiline = multiline
         self.timeoutMs = timeoutMs
         self.priority = priority
         self.useCache = useCache
@@ -119,6 +119,56 @@ public struct TranslateOptions {
         self.styleguideId = styleguideId
         self.styleguideReasoning = styleguideReasoning
         self.styleguideExplanationLanguage = styleguideExplanationLanguage
+    }
+
+    /// - Parameter multiline: Deprecated.
+    @available(*, deprecated, message: "The multiline parameter is deprecated.")
+    public init(sourceHint: String? = nil,
+                adaptTo: [String]? = nil,
+                glossaries: [String]? = nil,
+                instructions: [String]? = nil,
+                contentType: String? = nil,
+                multiline: Bool?,
+                timeoutMs: Int64? = nil,
+                priority: Priority? = nil,
+                useCache: UseCache? = nil,
+                cacheTTL: Int? = nil,
+                noTrace: Bool? = nil,
+                verbose: Bool? = nil,
+                headers: [String: String]? = nil,
+                style: TranslationStyle? = nil,
+                reasoning: Bool? = nil,
+                effort: ReasoningEffort? = nil,
+                imageContext: ImageContextValue? = nil,
+                metadata: TranslationMetadata? = nil,
+                profanitiesDetect: ProfanitiesDetect? = nil,
+                profanitiesHandling: ProfanitiesHandling? = nil,
+                styleguideId: String? = nil,
+                styleguideReasoning: Bool? = nil,
+                styleguideExplanationLanguage: String? = nil) {
+        self.init(sourceHint: sourceHint,
+                  adaptTo: adaptTo,
+                  glossaries: glossaries,
+                  instructions: instructions,
+                  contentType: contentType,
+                  timeoutMs: timeoutMs,
+                  priority: priority,
+                  useCache: useCache,
+                  cacheTTL: cacheTTL,
+                  noTrace: noTrace,
+                  verbose: verbose,
+                  headers: headers,
+                  style: style,
+                  reasoning: reasoning,
+                  effort: effort,
+                  imageContext: imageContext,
+                  metadata: metadata,
+                  profanitiesDetect: profanitiesDetect,
+                  profanitiesHandling: profanitiesHandling,
+                  styleguideId: styleguideId,
+                  styleguideReasoning: styleguideReasoning,
+                  styleguideExplanationLanguage: styleguideExplanationLanguage)
+        self.multiline = multiline
     }
 
     public func toParams() -> [String: Any] {
