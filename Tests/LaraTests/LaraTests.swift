@@ -135,7 +135,7 @@ func successfulTranslationDecodesAPIFailureWarning(stage: String) throws {
 @Test(arguments: ["low", "medium", "high"])
 func reasoningEffortParameters(effort: String) throws {
     let level = try #require(ReasoningEffort(rawValue: effort))
-    let params = TranslateOptions(reasoning: true, effort: level).toParams()
+    let params = TranslateOptions(reasoning: true, reasoningEffort: level).toParams()
     let data = try JSONSerialization.data(withJSONObject: params)
     let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
     #expect(json["effort"] as? String == effort)

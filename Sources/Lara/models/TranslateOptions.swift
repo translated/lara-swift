@@ -65,7 +65,7 @@ public struct TranslateOptions {
     public var style: TranslationStyle?
     public var reasoning: Bool?
     /// Requires reasoning=true. Leave nil to use the server default.
-    public var effort: ReasoningEffort?
+    public var reasoningEffort: ReasoningEffort?
     /// Non-empty image context requires reasoning=true. Image validation is performed by the API.
     public var imageContext: ImageContextValue?
     public var metadata: TranslationMetadata?
@@ -89,7 +89,7 @@ public struct TranslateOptions {
                 headers: [String: String]? = nil,
                 style: TranslationStyle? = nil,
                 reasoning: Bool? = nil,
-                effort: ReasoningEffort? = nil,
+                reasoningEffort: ReasoningEffort? = nil,
                 imageContext: ImageContextValue? = nil,
                 metadata: TranslationMetadata? = nil,
                 profanitiesDetect: ProfanitiesDetect? = nil,
@@ -111,7 +111,7 @@ public struct TranslateOptions {
         self.headers = headers
         self.style = style
         self.reasoning = reasoning
-        self.effort = effort
+        self.reasoningEffort = reasoningEffort
         self.imageContext = imageContext
         self.metadata = metadata
         self.profanitiesDetect = profanitiesDetect
@@ -138,7 +138,7 @@ public struct TranslateOptions {
                 headers: [String: String]? = nil,
                 style: TranslationStyle? = nil,
                 reasoning: Bool? = nil,
-                effort: ReasoningEffort? = nil,
+                reasoningEffort: ReasoningEffort? = nil,
                 imageContext: ImageContextValue? = nil,
                 metadata: TranslationMetadata? = nil,
                 profanitiesDetect: ProfanitiesDetect? = nil,
@@ -160,7 +160,7 @@ public struct TranslateOptions {
                   headers: headers,
                   style: style,
                   reasoning: reasoning,
-                  effort: effort,
+                  reasoningEffort: reasoningEffort,
                   imageContext: imageContext,
                   metadata: metadata,
                   profanitiesDetect: profanitiesDetect,
@@ -213,8 +213,8 @@ public struct TranslateOptions {
         if let reasoning = self.reasoning {
             params["reasoning"] = reasoning
         }
-        if let effort = self.effort {
-            params["effort"] = effort.rawValue
+        if let reasoningEffort = self.reasoningEffort {
+            params["effort"] = reasoningEffort.rawValue
         }
         if let imageContext = self.imageContext {
             params["image_context"] = imageContext.toJSON()
